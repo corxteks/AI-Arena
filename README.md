@@ -1,16 +1,16 @@
 # AI ARENA
 
-Prototipe aplikasi komunitas bulutangkis untuk pengelola GOR dengan 3 lapangan. Seluruh aplikasi ada dalam satu berkas, `ai-arena.html`, tanpa server dan tanpa proses build. Tampilannya dirancang untuk HP (mobile first) dan mendukung mode terang dan gelap.
+Prototipe aplikasi komunitas bulutangkis untuk pengelola GOR dengan 3 lapangan. Seluruh aplikasi ada dalam satu berkas, `index.html`, tanpa server dan tanpa proses build. Tampilannya dirancang untuk HP (mobile first) dan mendukung mode terang dan gelap.
 
 ## Cara membuka
 
-Buka `ai-arena.html` langsung di browser, atau jalankan server statis sederhana di folder ini:
+Buka `index.html` langsung di browser, atau jalankan server statis sederhana di folder ini:
 
 ```bash
 python -m http.server 8080
 ```
 
-lalu buka `http://localhost:8080/ai-arena.html`. Data disimpan di `localStorage` browser (kunci `ai-arena-v4`). Tombol **Kelola** di menu Obrolan (khusus pengelola) berisi **Isi data contoh** dan **Reset**.
+lalu buka `http://localhost:8080/`. Data disimpan di `localStorage` browser (kunci `ai-arena-v4`). Tombol **Kelola** di menu Obrolan (khusus pengelola) berisi **Isi data contoh** dan **Reset**.
 
 ## Fitur utama
 
