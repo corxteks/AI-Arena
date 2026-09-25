@@ -1274,6 +1274,9 @@ body main .rkfbtn,body main .rkbar button{min-height:40px}
 .bk{scroll-snap-type:x proximity}
 .bk-c{scroll-snap-align:start}
 }
+.rmrow{display:flex;gap:6px;align-items:center;margin:4px 0}
+.rmrow input{flex:1;min-width:0}
+.rmrow .btn{flex:none;min-width:38px}
 .gsearch{width:100%;height:34px;min-height:34px;font-size:13px;margin:0 0 8px;border-radius:999px;padding:0 14px}
 .auditbox{max-height:300px;overflow-y:auto;overscroll-behavior:contain}
 .stats.pstats{gap:6px}
@@ -2997,7 +3000,7 @@ const validHp=h=>/^(\+62|62|0)8\d{7,12}$/.test(String(h||'').replace(/[\s-]/g,''
 const inviteMatch=(c,u)=>(c.invites||[]).find(i=>(i.phone&&u.phone&&normHp(i.phone)===normHp(u.phone))||((!i.phone||!u.phone)&&i.name.trim().toLowerCase()===String(u.name||'').trim().toLowerCase()));
 function clubRoster(c){if(!canLead(c)||c.status!=='approved')return '';const inv=c.invites||[],full=c.maxMembers&&c.members.length>=c.maxMembers;
   return `<section class="sec psec"><h2>Anggota</h2><div class="panel"><div class="row"><div class="grow"><b>${c.members.length} anggota${c.maxMembers?' dari maks '+c.maxMembers:''}</b><div class="small muted">Tambahkan nama anggota, atau minta mereka bergabung dengan kode di atas.</div></div><button class="btn xs" data-act="openModal" data-m="addMember" data-id="${c.id}" ${full?'disabled':''}>Tambah anggota</button></div>
-  ${inv.length?`<div class="small muted dlab">Calon anggota (${inv.length}), otomatis diterima saat bergabung dengan kode</div>${inv.map(i=>`<div class="row"><div class="grow"><b>${esc(i.name)}</b><div class="small muted">${i.phone?esc(i.phone):'tanpa nomor HP'}</div></div><button class="btn xs danger" data-act="delInvite" data-id="${c.id}" data-i="${i.id}">Hapus</button></div>`).join('')}`:''}</div></section>`}
+  ${inv.length?`<div class="small muted dlab">Calon anggota (${inv.length}), otomatis diterima saat bergabung dengan kode</div>${inv.map(i=>`<div class="row"><div class="grow"><b>${esc(i.name)}</b>${i.phone?`<div class="small muted">${esc(i.phone)}</div>`:''}</div><button class="btn xs danger" data-act="delInvite" data-id="${c.id}" data-i="${i.id}">Hapus</button></div>`).join('')}`:''}</div></section>`}
 function genCode(c){let code;do{code=c.name.replace(/^PB\s*/i,'').replace(/[^A-Za-z]/g,'').slice(0,3).toUpperCase().padEnd(3,'X')+'-'+(1000+Math.floor(Math.random()*9000))}while(S.clubs.some(x=>x.code===code&&x.id!==c.id));return code}
 function reviewClash(c){const conf=[];S.courtSched.filter(x=>x.kind==='tetap'&&x.court===c.court&&x.day===c.day&&x.end>=Date.now()).forEach(x=>conf.push(x.name+' ('+x.time+')'));S.clubs.filter(x=>x.id!==c.id&&x.status==='approved'&&x.court===c.court&&x.day===c.day).forEach(x=>{if(!conf.some(y=>y.startsWith(x.name)))conf.push(x.name+' ('+x.time+')')});return conf}
 function mList(){const q=(ui.mQ||'').trim().toLowerCase(),f=ui.mF||'all';
@@ -3189,12 +3192,16 @@ function vModal(){
     <button class="btn full" data-act="doScan" data-src="tv">Pindai QR di layar TV</button><button class="btn ghost full" data-act="doScan" data-src="old">Pindai foto QR lama</button>
     <p class="small muted" style="margin-top:10px">Kode di layar TV saat ini: <b class="num">${tokenAt(curWin())}</b></p>`;
   }else if(M.type==='register'){
+    const f=M.f||{},rows=M.rows||[];
     h=`<h2>Daftarkan member baru</h2><p class="small muted">Member harus punya jadwal sewa rutin di GOR. Pengelola akan mencocokkannya dengan buku sewa.</p>
-    <label for="rName">Nama member</label><input id="rName" placeholder="Contoh: PB Kilat">
-    <div class="two"><div><label for="rDay">Hari sewa rutin</label><select id="rDay">${HARI.map((d,i)=>`<option value="${i}">${d}</option>`).join('')}</select></div><div><label for="rTime">Jam</label><input id="rTime" type="time" value="19:00"></div></div>
-    <label for="rCourt">Lapangan</label><select id="rCourt">${COURTS.map(c=>`<option>${c}</option>`).join('')}</select>
-    <label for="rRec">Nomor nota sewa</label><input id="rRec" placeholder="Tertera di nota dari resepsionis">
-    <label for="rList">Daftar anggota (opsional)</label><textarea id="rList" rows="4" placeholder="Satu anggota per baris:&#10;Budi Santoso, 081234567890&#10;Sari Dewi, 081298765432"></textarea><p class="small muted fmtnote">Setelah PB disetujui, anggota yang bergabung dengan kode PB dan nomor HP yang sama otomatis diterima tanpa menunggu persetujuan ketua.</p>
+    <label for="rName">Nama member</label><input id="rName" placeholder="Contoh: PB Kilat" value="${esc(f.rName||'')}">
+    <div class="two"><div><label for="rDay">Hari sewa rutin</label><select id="rDay">${HARI.map((d,i)=>`<option value="${i}" ${String(f.rDay??'')===String(i)?'selected':''}>${d}</option>`).join('')}</select></div><div><label for="rTime">Jam</label><input id="rTime" type="time" value="${esc(f.rTime||'19:00')}"></div></div>
+    <label for="rCourt">Lapangan</label><select id="rCourt">${COURTS.map(c=>`<option ${f.rCourt===c?'selected':''}>${c}</option>`).join('')}</select>
+    <label for="rRec">Nomor nota sewa</label><input id="rRec" placeholder="Tertera di nota dari resepsionis" value="${esc(f.rRec||'')}">
+    <div class="small muted dlab">Anggota (opsional)</div>
+    ${rows.map((n,i)=>`<div class="rmrow"><input id="rm${i}" maxlength="30" placeholder="Nama anggota ${i+1}" value="${esc(n)}" autocomplete="off" aria-label="Nama anggota ${i+1}"><button class="btn xs ghost" data-act="regDel" data-i="${i}" aria-label="Hapus anggota ${i+1}">✕</button></div>`).join('')}
+    <button class="btn xs" data-act="regAdd">+ Anggota</button>
+    <p class="small muted fmtnote">Cukup nama. Setelah PB disetujui, anggota yang bergabung dengan kode PB dan namanya sama otomatis diterima tanpa menunggu persetujuan ketua.</p>
     <button class="btn full" data-act="register">Kirim pendaftaran</button>`;
   }else if(M.type==='match'){
     const led=isAdmin()?S.clubs.filter(c=>c.status==='approved'):[];if(!led.length){ui.modal=null;return ''}
@@ -3310,8 +3317,7 @@ function vModal(){
     const c=club(M.id);if(!c||!canLead(c)){ui.modal=null;return ''}
     h=`<h2>Tambah anggota</h2><p class="small muted">${esc(c.name)}. ${c.members.length} anggota${c.maxMembers?' dari maks '+c.maxMembers:''}.</p>
     <label for="amN">Nama anggota</label><input id="amN" maxlength="30" placeholder="Nama lengkap" autocomplete="off">
-    <label for="amH">Nomor HP (opsional)</label><input id="amH" type="tel" inputmode="tel" maxlength="16" placeholder="Contoh 081234567890" autocomplete="off">
-    <label for="amM">Cara menambahkan</label><select id="amM"><option value="direct">Langsung jadi anggota (tanpa akun)</option><option value="invite">Calon anggota (diterima saat mendaftar dengan kode)</option></select>
+    <label for="amM">Cara menambahkan</label><select id="amM"><option value="direct">Langsung jadi anggota (tanpa akun)</option><option value="invite">Calon anggota (diterima saat bergabung dengan kode)</option></select>
     <div class="two rbtn"><button class="btn" data-act="addMemberDo" data-id="${c.id}">Tambah</button><button class="btn ghost" data-act="closeModal">Batal</button></div>`;
   }else if(M.type==='pairs'){
     const t=tourById(M.id);if(!t||!isAdmin()||t.status!=='reg'||t.plan){ui.modal=null;return ''}
@@ -3802,8 +3808,11 @@ const A={
     else{(c.invites=c.invites||[]).push({id:'i'+rid(),name:name.slice(0,30),phone:hpn});clubLog(c,name+' dicatat sebagai calon anggota.')}
     ui.modal=null;commit(name+(mode==='direct'?' ditambahkan sebagai anggota.':' dicatat sebagai calon anggota.'))},
   delInvite(d){const c=club(d.id);if(!c||!canLead(c))return;c.invites=(c.invites||[]).filter(i=>i.id!==d.i);commit('Calon anggota dihapus.')},
+  regCap(){const M=ui.modal;if(!M||M.type!=='register')return;M.f={rName:val('rName'),rDay:val('rDay'),rTime:val('rTime'),rCourt:val('rCourt'),rRec:val('rRec')};M.rows=(M.rows||[]).map((_,i)=>val('rm'+i))},
+  regAdd(){const M=ui.modal;if(!M||M.type!=='register')return;A.regCap();M.rows.push('');render();const e=document.getElementById('rm'+(M.rows.length-1));if(e)e.focus()},
+  regDel(d){const M=ui.modal;if(!M||M.type!=='register')return;A.regCap();M.rows.splice(+d.i,1);render()},
   register(){const name=val('rName');if(!name)return toast('Isi nama member.');
-    const invites=[];for(const line of val('rList').split(/\n/)){const t=line.trim();if(!t)continue;const p=t.split(/[,;\t]/),nm=(p[0]||'').trim(),hp=(p.slice(1).join('')||'').replace(/[\s-]/g,'');if(!nm)continue;if(hp&&!validHp(hp))return toast('Nomor HP tidak valid pada baris: '+t);invites.push({id:'i'+rid(),name:nm.slice(0,30),phone:hp?normHp(hp):''})}
+    const M0=ui.modal,seen0=new Set(),invites=[];((M0&&M0.rows)||[]).forEach((_,k)=>{const nm=val('rm'+k).trim().slice(0,30);if(nm&&!seen0.has(nm.toLowerCase())){seen0.add(nm.toLowerCase());invites.push({id:'i'+rid(),name:nm,phone:''})}});
     if(invites.length>60)return toast('Maksimal 60 anggota per pendaftaran.');
     S.clubs.push({id:'c'+rid(),invites,name,day:+val('rDay'),time:val('rTime')||'19:00',court:val('rCourt'),receipt:val('rRec'),status:'pending',code:null,leaderId:ME,members:[ME],requests:[],elo:CLUB_ELO_BASE,played:0,wins:0,createdAt:Date.now()});
     notify(admins(),`Pendaftaran member baru: ${name}.`,{tab:'komunitas'});ui.modal=null;commit('Pendaftaran terkirim. Menunggu persetujuan pengelola GOR.')},
