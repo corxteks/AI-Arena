@@ -1260,6 +1260,20 @@ body .sheet.sm .lvl,body .sheet .lvl{width:20px!important;height:20px!important;
 body main select,body main input:not([type=checkbox]):not([type=range]):not([type=file]),body .gal-up,body .pbsel,body .amsel{min-height:40px}
 body main .rkfbtn,body main .rkbar button{min-height:40px}
 }
+@media (max-width:480px){
+.bd td .tm>span{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.15;word-break:break-word}
+.bd td .tm{align-items:flex-start}
+.bd td .sc{white-space:normal;line-height:1.2}
+.bd td{padding:6px 6px 6px 8px}
+}
+/* HP: geser samping dengan gerakan jari, tanpa batang gulir yang terlihat */
+@media (max-width:700px),(hover:none){
+*{scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar{display:none;width:0;height:0}
+.bk,.bd,.fchips,.grpcols,.hm-q,.tabs,.rtabs,.memscroll,.cal-x{-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.bk{scroll-snap-type:x proximity}
+.bk-c{scroll-snap-align:start}
+}
 .gsearch{width:100%;height:34px;min-height:34px;font-size:13px;margin:0 0 8px;border-radius:999px;padding:0 14px}
 .auditbox{max-height:300px;overflow-y:auto;overscroll-behavior:contain}
 .stats.pstats{gap:6px}
@@ -3606,7 +3620,7 @@ function dummyKO(){const now=Date.now();if((S.tourneys||[]).some(t=>t.name==='Si
   const fin=m=>{m.games=genGames(rnd()<.5,rnd);m.cur=null;m.status='verified';m.submittedAt=Math.min(mwhen(m)+50*MIN,now-5*MIN);m.t=m.submittedAt;m.startedAt=m.submittedAt-Math.round(30+rnd()*30)*MIN};
   t.fixtures.forEach(f=>fin(match(f.matchId)));tourAdvance(t.id);
   (t.rounds[t.rounds.length-1]||[]).forEach(fx=>{if(fx.matchId)fin(match(fx.matchId))});tourAdvance(t.id)}
-function migrateTour(){{const seen=new Set();const n=S.announcements.length;S.announcements=S.announcements.filter(a=>{if(seen.has(a.text))return false;seen.add(a.text);return true});if(S.announcements.length!==n)save()}if(!S.dKO){dummyKO();S.dKO=true;save()}if(!S.d24b){dummy24();save()}if(S.rateReset&&!S.rateRestore){S.users.filter(u=>!u.role&&!u.guest&&u.played>0).forEach(u=>{u.rated=true;u.fresh=false;if(!(u.ratingLog||[]).length)u.ratingLog=[{t:Date.now(),by:'ade',from:u.elo,to:u.elo,reason:'Penilaian dipulihkan'}]});S.rateRestore=true;save()}if(!S.d12b){const t=(S.tourneys||[]).find(x=>x.name==='Open 12 Pasang');if(t){const gs=t.pairs.flatMap(p=>[p.a,p.b]).filter(id=>(user(id)||{}).guest);t.pairs=[];t.pool=[];S.users=S.users.filter(u=>!gs.includes(u.id))}S.d12b=true;save()}const old=(S.tourneys||[]).filter(t=>t.series);if(!old.length)return;const ids=old.map(t=>t.id);S.matches=S.matches.filter(m=>!ids.includes(m.tourneyId));S.tourneys=S.tourneys.filter(t=>!t.series);dummyBalance();save()}
+function migrateTour(){S.tourneys=S.tourneys||[];S.matches=S.matches||[];S.announcements=S.announcements||[];const hasMem=S.users.some(u=>!u.role&&!u.guest);{const seen=new Set();const n=S.announcements.length;S.announcements=S.announcements.filter(a=>{if(seen.has(a.text))return false;seen.add(a.text);return true});if(S.announcements.length!==n)save()}if(hasMem&&!S.dKO){dummyKO();S.dKO=true;save()}if(hasMem&&!S.d24b){dummy24();save()}if(S.rateReset&&!S.rateRestore){S.users.filter(u=>!u.role&&!u.guest&&u.played>0).forEach(u=>{u.rated=true;u.fresh=false;if(!(u.ratingLog||[]).length)u.ratingLog=[{t:Date.now(),by:'ade',from:u.elo,to:u.elo,reason:'Penilaian dipulihkan'}]});S.rateRestore=true;save()}if(!S.d12b){const t=(S.tourneys||[]).find(x=>x.name==='Open 12 Pasang');if(t){const gs=t.pairs.flatMap(p=>[p.a,p.b]).filter(id=>(user(id)||{}).guest);t.pairs=[];t.pool=[];S.users=S.users.filter(u=>!gs.includes(u.id))}S.d12b=true;save()}const old=(S.tourneys||[]).filter(t=>t.series);if(!old.length)return;const ids=old.map(t=>t.id);S.matches=S.matches.filter(m=>!ids.includes(m.tourneyId));S.tourneys=S.tourneys.filter(t=>!t.series);dummyBalance();save()}
 function dummyLive(){const now=Date.now(),pl=S.users.filter(u=>!u.role&&!u.guest),cl=S.clubs.filter(c=>c.status==='approved');if(pl.length<8||cl.length<3||S.matches.some(m=>m.status==='playing'))return;
   const A=cl[0].members.slice(0,2),B=cl[1].members.slice(0,2),ump=cl[2].members[0];
   const m={id:'m'+rid(),clubId:cl[0].id,type:'double',teamA:A,teamB:B,umpireId:ump,court:COURTS[0],status:'playing',games:[[21,17]],cur:newCur(A,B,'a',9,7),t:now-40*MIN,stream:{id:'yt_'+rid(),privacy:'unlisted',started:now-25*MIN,seen:{},rx:{'👏':6,'🔥':3},likes:[],comments:[]}};
@@ -4315,7 +4329,7 @@ setInterval(()=>{if(ui.view==='tv')render();else if(ui.view==='watch'&&!ui.modal
 setInterval(()=>{if(ui.tab==='live'&&!ui.view&&!ui.modal&&isAdmin()&&!document.activeElement?.matches('input,textarea,select'))render(true)},3000);
 setInterval(()=>{if(!ui.modal&&!['umpire','tv'].includes(ui.view)&&!document.activeElement?.matches('input,textarea,select'))render(true)},60000);
 (()=>{const m=location.hash.match(/^#tv=(.+)$/);if(m){const c=decodeURIComponent(m[1]);if(COURTS.includes(c)){ui.view='tv';ui.court=c}}})();
-migrateTour();
+try{migrateTour()}catch(e){console.error('migrasi data gagal',e)}
 render();
 
 </script>
