@@ -1228,6 +1228,38 @@ button.prow:hover{transform:none}
 .hm-live{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--border);font-size:13px}
 .hm-live:first-child{border-top:0}
 .hm-live span{font-size:12px;color:var(--muted);text-align:right}
+/* ---- sasaran sentuh dan teks minimal untuk HP ---- */
+@media (max-width:700px){
+body .btn.xs,body button.btn.xs{min-height:36px!important;height:auto!important;padding:6px 12px!important;font-size:12.5px!important}
+body .btn.sm,body button.btn.sm{min-height:40px!important;height:auto!important;font-size:13.5px!important}
+body .btn.back{min-height:38px!important}
+body .sheet.sm .rbtn .btn,body .sheet.sm .btn.full,body .sheet .rbtn .btn{min-height:44px!important;height:auto!important;font-size:14px!important}
+body article.match .actions .btn{min-height:36px!important;height:auto!important;font-size:12.5px!important}
+body .pp1 .btn.xs,body .sheet.sm .pp1 .btn.xs{min-height:38px!important;padding:6px 14px!important}
+body .pp1{gap:8px 8px;padding:6px 0}
+body .pp1 .btn.danger{margin-left:8px}
+body .bd .bmv{min-height:34px!important;height:auto!important;font-size:12px!important}
+body .fchip{min-height:36px;height:auto}
+body .sheet.sm select,body .sheet.sm input:not([type=checkbox]),body .sheet select,body .sheet input:not([type=checkbox]){min-height:40px!important;height:auto!important}
+body .sheet.sm .pc1 .lvs,body .sheet.sm .pp1 .lvs{min-height:38px!important}
+body .chip,body article.match .mchips .chip,body article.match .mhead .chip{font-size:11px!important}
+body .bd td small,body .bd td .vs2,body .zc em,body .uplayer small,body .cc .ccl,body .hm-c small,body .hm-wk small,body .mynext small{font-size:11px!important}
+body .bk-m small{font-size:11px!important}
+body .btn.cork.xs,body .btn.ghost.xs{min-height:36px!important}
+body .tabs button,body .rtabs button{min-height:40px}
+body .lvl{width:20px;height:20px;font-size:11px}
+body .dchip{height:42px}
+body .dchip small{font-size:10px!important;height:11px}
+body .cal>b{font-size:11px}
+body .qbars span,body .lstats span,body .qbars small,body .lstats small{font-size:11px!important}
+body select,body .rksearch,body .rkfbtn,body .shsel,body .rkact{min-height:38px}
+body .bell,body .hdr button.bell{min-width:40px;min-height:40px}
+body .rkctl button,body .rkbar button{min-height:38px}
+body .zc em{font-size:11px!important}
+body .sheet.sm .lvl,body .sheet .lvl{width:20px!important;height:20px!important;font-size:11px!important}
+body main select,body main input:not([type=checkbox]):not([type=range]):not([type=file]),body .gal-up,body .pbsel,body .amsel{min-height:40px}
+body main .rkfbtn,body main .rkbar button{min-height:40px}
+}
 .gsearch{width:100%;height:34px;min-height:34px;font-size:13px;margin:0 0 8px;border-radius:999px;padding:0 14px}
 .auditbox{max-height:300px;overflow-y:auto;overscroll-behavior:contain}
 .stats.pstats{gap:6px}
