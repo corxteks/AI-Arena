@@ -2997,6 +2997,8 @@ const clubLog=(c,text)=>{(c.history=c.history||[]).push({t:Date.now(),by:ME,text
 const phoneOf=c=>(pbSched(c).find(x=>x.hp)||{}).hp||(user(c.leaderId)&&user(c.leaderId).phone)||'';
 const normHp=h=>{let d=String(h||'').replace(/[^0-9]/g,'');if(d.startsWith('62'))d='0'+d.slice(2);return d};
 const validHp=h=>/^(\+62|62|0)8\d{7,12}$/.test(String(h||'').replace(/[\s-]/g,''));
+const mergeRoster=c=>{const k=memberKey(c.name),p=(S.pbRoster||{})[k];if(p&&p.length){c.invites=c.invites||[];p.forEach(i=>{if(!c.invites.some(x=>x.name.toLowerCase()===i.name.toLowerCase()))c.invites.push(i)});delete S.pbRoster[k]}};
+const addRoster=(pbName,names)=>{const key=memberKey(pbName),c=S.clubs.find(x=>memberKey(x.name)===key),list=c?(c.invites=c.invites||[]):((S.pbRoster=S.pbRoster||{})[key]=S.pbRoster[key]||[]);let n=0;names.forEach(nm=>{const low=nm.toLowerCase();if(list.some(i=>i.name.toLowerCase()===low)||(c&&c.members.some(id=>((user(id)||{}).name||'').toLowerCase()===low)))return;list.push({id:'i'+rid(),name:nm.slice(0,30),phone:''});n++});return n};
 const inviteMatch=(c,u)=>(c.invites||[]).find(i=>(i.phone&&u.phone&&normHp(i.phone)===normHp(u.phone))||((!i.phone||!u.phone)&&i.name.trim().toLowerCase()===String(u.name||'').trim().toLowerCase()));
 function clubRoster(c){if(!canLead(c)||c.status!=='approved')return '';const inv=c.invites||[],full=c.maxMembers&&c.members.length>=c.maxMembers;
   return `<section class="sec psec"><h2>Anggota</h2><div class="panel"><div class="row"><div class="grow"><b>${c.members.length} anggota${c.maxMembers?' dari maks '+c.maxMembers:''}</b><div class="small muted">Tambahkan nama anggota, atau minta mereka bergabung dengan kode di atas.</div></div><button class="btn xs" data-act="openModal" data-m="addMember" data-id="${c.id}" ${full?'disabled':''}>Tambah anggota</button></div>
@@ -3577,6 +3579,9 @@ function vModal(){
     ${M.rows.map((r,k)=>`<div class="srow"><select id="stCourt${k}" aria-label="Lapangan">${COURTS.map(x=>`<option ${x===r.court?'selected':''}>${x}</option>`).join('')}</select><select id="stDay${k}" aria-label="Hari">${HARI.map((d,i)=>`<option value="${i}" ${i===r.day?'selected':''}>${d}</option>`).join('')}</select><input id="stTime${k}" type="time" value="${esc(r.time)}" aria-label="Jam mulai">${M.rows.length>1?`<button class="btn xs ghost" data-act="delSchedRow" data-i="${k}" aria-label="Hapus baris jadwal">✕</button>`:'<span></span>'}</div>`).join('')}
     <button class="btn xs ghost gal" style="margin-top:6px" data-act="addSchedRow">+ Jadwal lain</button>
     <label for="stFee">Iuran per jadwal (Rp)</label><input id="stFee" type="number" min="0" step="1000" placeholder="Contoh: 150000" value="${M.fee||''}">
+    <div class="small muted dlab">Anggota (opsional)</div>
+    ${(M.members||[]).map((n,i)=>`<div class="rmrow"><input id="stM${i}" maxlength="30" placeholder="Nama anggota ${i+1}" value="${esc(n)}" autocomplete="off" aria-label="Nama anggota ${i+1}"><button class="btn xs ghost" data-act="stMDel" data-i="${i}" aria-label="Hapus anggota ${i+1}">✕</button></div>`).join('')}
+    <button class="btn xs" data-act="stMAdd">+ Anggota</button><p class="small muted fmtnote">Cukup nama. Anggota yang bergabung dengan kode PB dan namanya sama otomatis diterima.</p>
     <div class="two rbtn"><button class="btn" data-act="saveSchedTetap">Simpan${M.rows.length>1?' '+M.rows.length+' jadwal':' jadwal'}</button><button class="btn ghost" data-act="closeModal">Batal</button></div>`;
   }
   return (`<div class="scrim" data-act="scrimClose"><div class="sheet${['rate','schedTetap','editSched','memberDetail','msg','broadcast','pbDetail','tvlink','hl','tvpair','cast','clubReview','clubEdit','codeSet','moveMember','kickMember','changeLeader','sanction','mergeClub','pbBroadcast','memberCard','match','findOpp','tourNew','tourJoin','ligaNew','decide','disputeM','voidM','scoreFix','plan','resched','grpAssign','pairs','sched','pEdit','pickPair','pairsOpt','grpSet','mctl','addMember'].includes(M.type)?' sm':''}" role="dialog" aria-modal="true">${h}${/data-act="(closeModal|askCancel)"/.test(h)?'':'<button class="btn ghost full" data-act="closeModal">Tutup</button>'}</div></div>`)+confirmHtml();
@@ -3815,8 +3820,9 @@ const A={
     const M0=ui.modal,seen0=new Set(),invites=[];((M0&&M0.rows)||[]).forEach((_,k)=>{const nm=val('rm'+k).trim().slice(0,30);if(nm&&!seen0.has(nm.toLowerCase())){seen0.add(nm.toLowerCase());invites.push({id:'i'+rid(),name:nm,phone:''})}});
     if(invites.length>60)return toast('Maksimal 60 anggota per pendaftaran.');
     S.clubs.push({id:'c'+rid(),invites,name,day:+val('rDay'),time:val('rTime')||'19:00',court:val('rCourt'),receipt:val('rRec'),status:'pending',code:null,leaderId:ME,members:[ME],requests:[],elo:CLUB_ELO_BASE,played:0,wins:0,createdAt:Date.now()});
+    mergeRoster(S.clubs[S.clubs.length-1]);
     notify(admins(),`Pendaftaran member baru: ${name}.`,{tab:'komunitas'});ui.modal=null;commit('Pendaftaran terkirim. Menunggu persetujuan pengelola GOR.')},
-  approveClub(d){if(!isAdmin())return;const c=club(d.id);if(!c)return;const note=val('rvNote');c.status='approved';c.code=genCode(c);c.createdAt=c.createdAt||Date.now();c.reviewNote=note;
+  approveClub(d){if(!isAdmin())return;const c=club(d.id);if(!c)return;const note=val('rvNote');c.status='approved';mergeRoster(c);c.code=genCode(c);c.createdAt=c.createdAt||Date.now();c.reviewNote=note;
     clubLog(c,'Disetujui pengelola'+(note?': '+note:'')+'.');logAct(`PB disetujui: ${c.name}.`);notify(c.leaderId,`${c.name} disetujui pengelola GOR. Bagikan kode ${c.code} ke anggotamu.`,{tab:'club'});ui.modal=null;commit(c.name+' disetujui. Kode: '+c.code)},
   rejectClub(d){if(!isAdmin())return;const c=club(d.id);if(!c)return;const why=val('rvWhy')||'Tidak sesuai',note=val('rvNote'),txt=why+(note?': '+note:'');c.status='rejected';c.rejectReason=txt;
     clubLog(c,'Ditolak: '+txt+'.');logAct(`PB ditolak: ${c.name} (${txt}).`);notify(c.leaderId,`Pendaftaran ${c.name} ditolak. Alasan: ${txt}. Hubungi resepsionis GOR.`,{tab:'home'});ui.modal=null;commit('Pendaftaran ditolak.')},
@@ -4217,8 +4223,10 @@ const A={
     const clash=S.clubs.some(x=>x.id!==c.id&&x.status==='approved'&&x.court===court&&x.day===day&&x.time===time);
     c.day=day;c.time=time;c.court=court;
     ui.modal=null;commit((clash?'Perhatian: jadwal bentrok dengan member lain di lapangan yang sama. ':'')+`Jadwal ${esc(c.name)} diatur ke ${HARI[day]} ${time}, ${court}.`)},
-  syncSchedForm(){const M=ui.modal;if(!M||M.type!=='schedTetap')return;M.name=val('stName');M.ketua=val('stKetua');M.hp=val('stHp');M.fee=val('stFee');
+  syncSchedForm(){const M=ui.modal;if(!M||M.type!=='schedTetap')return;M.name=val('stName');M.ketua=val('stKetua');M.hp=val('stHp');M.fee=val('stFee');M.members=(M.members||[]).map((_,i)=>val('stM'+i));
     M.rows=(M.rows||[]).map((r,k)=>({court:val('stCourt'+k)||r.court,day:+val('stDay'+k),time:val('stTime'+k)||r.time}))},
+  stMAdd(){A.syncSchedForm();const M=ui.modal;if(!M||M.type!=='schedTetap')return;(M.members=M.members||[]).push('');render();const e=document.getElementById('stM'+(M.members.length-1));if(e)e.focus()},
+  stMDel(d){A.syncSchedForm();const M=ui.modal;if(!M||M.type!=='schedTetap')return;M.members.splice(+d.i,1);render()},
   addSchedRow(){A.syncSchedForm();const M=ui.modal,l=M.rows[M.rows.length-1];M.rows.push({court:l.court,day:l.day,time:l.time});render()},
   delSchedRow(d){A.syncSchedForm();const M=ui.modal;if(M.rows.length>1)M.rows.splice(+d.i,1);render()},
   saveSchedTetap(){if(!isAdmin())return;A.syncSchedForm();const M=ui.modal;
@@ -4233,7 +4241,8 @@ const A={
     let made=[];
     cand.forEach(e=>{const sesi=sessionDates(e.day,e.time);Object.assign(e,{sesi,start:sesi[0],end:endOfDay(sesi[sesi.length-1])});S.courtSched.push(e);made.push(`${e.court} ${HARI[e.day]} ${e.time}`)});
     logAct(`Jadwal baru: ${name}, ${made.join('; ')}${fee?', '+rp(fee)+' per jadwal':''}.`);
-    ui.modal=null;commit((made.length>1?`${made.length} jadwal ${esc(name)} disimpan.`:`Jadwal tetap ${esc(name)} disimpan di ${made[0]}, berlaku ${SESI_SEBULAN}x main.`))},
+    const nm0=[...new Set((M.members||[]).map(n=>n.trim()).filter(Boolean))],nAdd=nm0.length?addRoster(name,nm0):0;
+    ui.modal=null;commit((nAdd?`${nAdd} anggota dicatat. `:'')+(made.length>1?`${made.length} jadwal ${esc(name)} disimpan.`:`Jadwal tetap ${esc(name)} disimpan di ${made[0]}, berlaku ${SESI_SEBULAN}x main.`))},
   zoomPhoto(d){ui.zoom=d.id;render()},
   closeZoom(){ui.zoom=null;render()},
   openCourt(d){ui.courtPage=d.court;ui.view='court';ui.modal=null;render();window.scrollTo(0,0)},
