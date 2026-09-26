@@ -2297,6 +2297,28 @@ body .grpgrid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr
 body .grpgrid>.grpcard:only-child{grid-column:1/-1!important;width:100%!important;max-width:none!important}
 body .grpgrid>.grpcard{min-width:0;width:auto!important;max-width:none!important}
 @media (max-width:420px){body .grpgrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+
+.usetup{margin:0 12px 8px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);color:#fff}
+.usetup .uh{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#F5C56B;margin-bottom:6px}
+.usetup .urow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0;border-top:1px solid rgba(255,255,255,.12)}
+.usetup .urow:first-of-type{border-top:0}
+.usetup .un{display:flex;flex-direction:column;min-width:0}.usetup .un b{font-size:14px}.usetup .un small{font-size:11.5px;color:rgba(255,255,255,.75)}
+.usetup .useg{display:flex;gap:6px}
+.usetup .ubtn.sm,.ump .ubtn.sm{min-height:30px;height:30px;padding:0 10px;font-size:12px;border-radius:6px;white-space:nowrap}
+.ump .ubtn.go.pulse{animation:upulse 1.2s ease-in-out infinite}
+@keyframes upulse{0%,100%{box-shadow:0 0 0 0 rgba(245,165,36,.6)}50%{box-shadow:0 0 0 8px rgba(245,165,36,0)}}
+.ump .ufoot{gap:6px}.ump .ufoot .ubtn{font-size:13px}
+.ump .gchips:empty{display:none!important}
+.ump .gchips{min-height:0!important;height:auto!important;margin:0 0 4px}
+.ump .ubar{padding-bottom:4px}
+.ump .usetup{margin-top:4px}
+
+.usetup{margin:2px 10px 6px!important;padding:6px 10px!important;border-radius:8px!important}
+.usetup .uh{font-size:10.5px!important;margin-bottom:2px!important}
+.usetup .urow{padding:3px 0!important;gap:6px!important}
+.usetup .un b{font-size:12.5px!important}.usetup .un small{font-size:10.5px!important}
+.usetup .ubtn.sm,.ump .usetup .ubtn.sm{min-height:24px!important;height:24px!important;padding:0 8px!important;font-size:11px!important;border-radius:5px!important}
+.usetup .ustart{width:100%;margin-top:6px;min-height:34px!important;height:34px!important;font-size:13px!important;border-radius:6px!important;justify-content:center}
 </style>
 </head>
 <body>
@@ -3734,16 +3756,26 @@ function vUmpire(){
   const si=c&&!w?srvInfo(m):null;ui.upos=ui.upos||{};
   const side=s=>{const ids=s==='a'?m.teamA:m.teamB, sc=c?c[s]:(s==='a'?last[0]:last[1]), serving=c&&c.server===s,pos=c?c.pos[s]:{R:ids[0],L:ids[1]},key=m.id+s,swp=c&&ui.upos[key]!=null&&ui.upos[key]!==pos.L;if(c)ui.upos[key]=pos.L;
     const pc=id=>{if(!id)return '';const role=si&&si.server===id?'srv':si&&si.receiver===id?'rcv':'';return `<span class="uplayer ${role}${swp?' swp':''}"><i aria-hidden="true">${role==='srv'?shuttle:''}</i><b>${esc(first(id))}</b><small>${role==='srv'?'Servis':role==='rcv'?'Terima':'&nbsp;'}</small></span>`};
-    return `<button class="zone ${s} ${serving?'serving':''}" data-act="point" data-side="${s}" ${w?'disabled':''} aria-label="Tambah poin untuk ${esc(names(ids))}"><span class="zgames">${gamesWon(m,s)} gim</span><span class="zscore" data-sk="z${m.id}${s}">${sc}</span><span class="zcourt">${ids.length>1?`<span class="zc"><em>Kiri</em>${pc(pos.L)}</span><span class="zc"><em>Kanan</em>${pc(pos.R)}</span>`:`<span class="zc one">${pc(pos.R)}</span>`}</span></button>`};
+    return `<button class="zone ${s} ${serving?'serving':''}" data-act="point" data-side="${s}" ${w||start?'disabled':''} aria-label="Tambah poin untuk ${esc(names(ids))}"><span class="zgames">${gamesWon(m,s)} gim</span><span class="zscore" data-sk="z${m.id}${s}">${sc}</span><span class="zcourt">${ids.length>1?`<span class="zc"><em>Kiri</em>${pc(pos.L)}</span><span class="zc"><em>Kanan</em>${pc(pos.R)}</span>`:`<span class="zc one">${pc(pos.R)}</span>`}</span></button>`};
   let status;
   if(w)status=`Pertandingan selesai. ${esc(names(w==='a'?m.teamA:m.teamB))} menang ${gamesWon(m,w)}–${gamesWon(m,w==='a'?'b':'a')}.`;
   else if(c.a===29&&c.b===29)status='29–29: poin berikutnya menentukan gim';
   else if(c.a>=20&&c.b>=20)status='Deuce: butuh selisih 2 poin, maksimal 30';
-  else status=`Gim ${m.games.length+1}. ${si?`<b>${esc(first(si.server))}</b> servis dari ${courtName(si.court)} ke <b>${esc(first(si.receiver))}</b>. `:''}Ketuk sisi tim yang mendapat poin.`;
+  else status='';
+  const g0=m.games.length,start=!w&&c&&c.a+c.b===0&&!c.go,mid=!w&&c&&g0===2&&Math.max(c.a,c.b)===11&&!m.swapMid;
+  const needSwap=((!w&&c&&c.a+c.b===0)&&g0>=1&&m.swapAt!==g0)||mid;
+  const swapBtn=!w&&c&&(needSwap||m.flip)?`<button class="ubtn ${needSwap?'go pulse':''}" data-act="uFlip" title="Tukar sisi lapangan">⇄ Tukar sisi${needSwap?(mid?' (rubber set)':' (gim '+(g0+1)+')'):''}</button>`:'';
+  const nm=ids=>ids.map(id=>esc(first(id))).join(' & ');
+  const setup=start?`<div class="usetup"><div class="uh">Atur posisi awal${g0===0?' dan servis pertama':''}</div>
+    ${['a','b'].map(k=>{const ids=k==='a'?m.teamA:m.teamB,p=c.pos[k];return `<div class="urow"><span class="un"><b>${nm(ids)}</b><small>Kiri: ${esc(first(p.L||p.R))}${ids.length>1?' · Kanan: '+esc(first(p.R)):''}</small></span>${ids.length>1?`<button class="ubtn sm" data-act="uSwapPos" data-side="${k}">⇄ Tukar kiri/kanan</button>`:''}</div>`}).join('')}
+    ${g0===0?`<div class="urow"><span class="un"><b>Servis pertama</b><small>${esc(first(c.srv))} servis dari kanan</small></span><span class="useg"><button class="ubtn sm ${c.server==='a'?'go':''}" data-act="uFirst" data-side="a">${esc(nm(m.teamA))}</button><button class="ubtn sm ${c.server==='b'?'go':''}" data-act="uFirst" data-side="b">${esc(nm(m.teamB))}</button></span></div>`:''}
+    <button class="ubtn go ustart" data-act="uStart">${g0===0?'▶ Mulai pertandingan':'▶ Mulai gim '+(g0+1)}</button>
+  </div>`:'';
   return `<div class="ump" role="application" aria-label="Panel wasit"><div class="ubar"><button class="ubtn" data-act="closeView">Keluar</button><div class="t"><b>${esc(names(m.teamA))} vs ${esc(names(m.teamB))}</b><span><i class="umode">MODE WASIT</i> ${esc(m.court)}${m.stream&&!m.stream.ended?' · siaran live aktif':''}${mPlayMs(m)?` · <b class="utimer" data-since="${m.startedAt||m.t}" ${m.status==='playing'?'':'data-stop="1"'}>${fmtDur(mPlayMs(m))}</b>`:''}</span></div></div>
-    <div class="gchips">${m.games.map((g,i)=>`<span aria-label="Gim ${i+1}">${g[0]}–${g[1]}</span>`).join('')}</div><div class="ustatus" aria-live="polite">${status}</div>
-    <div class="zones">${side('a')}${side('b')}</div>
-    <div class="ufoot"><button class="ubtn" data-act="undo" ${m.undo?'':'disabled'}>Undo</button><button class="ubtn go" data-act="submitScore" ${w?'':'disabled'}>Kirim skor untuk verifikasi</button></div></div>`;
+    <div class="gchips">${m.games.map((g,i)=>`<span aria-label="Gim ${i+1}">${g[0]}–${g[1]}</span>`).join('')}</div>${status?`<div class="ustatus" aria-live="polite">${status}</div>`:''}
+    ${setup}
+    <div class="zones">${m.flip?side('b')+side('a'):side('a')+side('b')}</div>
+    <div class="ufoot"><button class="ubtn" data-act="undo" ${m.undo?'':'disabled'}>Undo</button>${swapBtn}<button class="ubtn go" data-act="submitScore" ${w?'':'disabled'}>Kirim skor untuk verifikasi</button></div></div>`;
 }
 
 /* ---------- modal ---------- */
@@ -4741,7 +4773,7 @@ const A={
     (m.corr=m.corr||[]).push({t:Date.now(),by:ME,from,to,why});if(m.status==='disputed'){m.status='verified';applyElo(m);m.decision={by:ME,text:'skor dikoreksi. '+why,t:Date.now()}}
     if(isAdmin())logAct(`Skor dikoreksi: ${names(m.teamA)} vs ${names(m.teamB)} (${from} -> ${to}).`);notify(players(m),`Skor ${names(m.teamA)} vs ${names(m.teamB)} dikoreksi menjadi ${to}. ${why}.`,{tab:'match'});ui.modal=null;commit('Skor dikoreksi'+(m.friendly?'.':'. ELO dihitung ulang.'))},
   openUmpire(d){ui.view='umpire';ui.matchId=d.id;const m=match(d.id);if(m.status==='scheduled')m.status='playing';if(!m.startedAt)m.startedAt=Date.now();if(!m.log||!m.log.length)logSnap(m);save();render()},
-  point(d){const m=match(ui.matchId);if(!m||winner(m)||!m.cur)return;
+  point(d){const m=match(ui.matchId);if(!m||winner(m)||!m.cur)return;if(m.cur.a+m.cur.b===0&&!m.cur.go&&!m.games.length&&m.cur.needsStart)return toast('Tekan Mulai pertandingan dulu.');
     m.undo=JSON.stringify({cur:m.cur,games:m.games});
     if(!m.cur.pos)m.cur=newCur(m.teamA,m.teamB,m.cur.server,m.cur.a,m.cur.b);
     const c=m.cur,s=d.side,o=s==='a'?'b':'a',prev=c.server;c[s]++;
@@ -4752,6 +4784,10 @@ const A={
       if(winner(m)){m.cur=null;toast('Pertandingan selesai. Kirim skor untuk diverifikasi.')}
       else{m.cur=newCur(m.teamA,m.teamB,s);toast('Gim '+m.games.length+' untuk '+names(s==='a'?m.teamA:m.teamB)+'. Istirahat 2 menit.')}}
     logSnap(m);commit()},
+  uStart(){const m=match(ui.matchId),c=m&&m.cur;if(!c)return;c.go=true;if(!m.startedAt&&!m.games.length)m.startedAt=Date.now();commit(m.games.length?'Gim '+(m.games.length+1)+' dimulai.':'Pertandingan dimulai.')},
+  uSwapPos(d){const m=match(ui.matchId),c=m&&m.cur;if(!c||c.a+c.b!==0)return;const p=c.pos[d.side];if(p&&p.L!=null){[p.R,p.L]=[p.L,p.R];c.srv=c.pos[c.server][c[c.server]%2===0?'R':'L']||c.pos[c.server].R;commit()}},
+  uFirst(d){const m=match(ui.matchId),c=m&&m.cur;if(!c||c.a+c.b!==0||m.games.length)return;c.server=d.side;c.srv=c.pos[d.side].R;commit()},
+  uFlip(){const m=match(ui.matchId);if(!m||!m.cur)return;m.flip=!m.flip;const g=m.games.length;if(g===2&&Math.max(m.cur.a,m.cur.b)===11)m.swapMid=true;else m.swapAt=g;commit('Sisi lapangan ditukar.')},
   undo(){const m=match(ui.matchId);if(!m.undo)return;const p=JSON.parse(m.undo);m.cur=p.cur;m.games=p.games;m.undo=null;logSnap(m);commit('Poin terakhir dibatalkan.')},
   submitScore(){const m=match(ui.matchId);if(!winner(m))return;m.status='pending';m.undo=null;m.t=Date.now();m.submittedAt=Date.now();
     if(m.stream&&!m.stream.ended){m.stream.ended=true;m.stream.endedAt=Date.now();quota().used+=END_COST}
