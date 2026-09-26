@@ -14,10 +14,12 @@ const wrap = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch
 export function createApp() {
   const app = express();
   app.disable('x-powered-by');
-  app.use(helmet());
+  app.use(helmet({ crossOriginResourcePolicy: false }));
+  // Jaringan lokal (localhost dan IP pribadi) hanya diizinkan bila CORS_ALLOW_LAN=1, untuk mencoba dari HP di Wi-Fi yang sama.
+  const LAN = /^https?:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/;
   app.use(cors({
     origin(origin, cb) {
-      if (!origin || config.corsOrigins.includes(origin)) return cb(null, true);
+      if (!origin || config.corsOrigins.includes(origin) || (config.corsAllowLan && LAN.test(origin))) return cb(null, true);
       cb(new HttpError(403, 'Asal tidak diizinkan.'));
     },
   }));
@@ -25,6 +27,8 @@ export function createApp() {
 
   const strict = rateLimit({ windowMs: 15 * 60 * 1000, limit: config.authRateLimit, standardHeaders: true, legacyHeaders: false, message: { error: 'Terlalu banyak percobaan. Coba lagi beberapa menit lagi.' } });
 
+  const clients = new Set();
+  const broadcast = ev => { const line = `data: ${JSON.stringify(ev)}\n\n`; for (const r of clients) r.write(line); };
   /* ---------- kesehatan ---------- */
   app.get('/api/health', wrap(async (_req, res) => {
     await query('SELECT 1');
@@ -33,11 +37,11 @@ export function createApp() {
 
   /* ---------- autentikasi ---------- */
   app.post('/api/auth/setup-admin', strict, wrap(async (req, res) => res.status(201).json(await auth.setupAdmin(req.body || {}))));
-  app.post('/api/auth/login', strict, wrap(async (req, res) => res.json(await auth.loginWithCode((req.body || {}).code))));
+  app.post('/api/auth/login', strict, wrap(async (req, res) => { const r = await auth.loginWithCode((req.body || {}).code); broadcast({ type: 'identity' }); res.json(r); }));
   app.get('/api/me', auth.requireAuth, wrap(async (req, res) => {
     res.json({ user: auth.publicUser(req.user), role: await auth.roleOf(req.user) });
   }));
-  app.post('/api/clubs/apply', strict, wrap(async (req, res) => res.status(201).json(await auth.applyClub(req.body || {}))));
+  app.post('/api/clubs/apply', strict, wrap(async (req, res) => { const r = await auth.applyClub(req.body || {}); broadcast({ type: 'identity' }); res.status(201).json(r); }));
 
   /* ---------- PB ---------- */
   app.get('/api/clubs', auth.requireAuth, wrap(async (req, res) => {
@@ -54,14 +58,13 @@ export function createApp() {
     }
     res.json({ clubs: out });
   }));
-  app.post('/api/clubs/:id/approve', auth.requireAuth, auth.requireAdmin, wrap(async (req, res) => res.json(await auth.approveClub(req.user.id, req.params.id, true))));
-  app.post('/api/clubs/:id/reject', auth.requireAuth, auth.requireAdmin, wrap(async (req, res) => res.json(await auth.approveClub(req.user.id, req.params.id, false))));
-  app.post('/api/clubs/:id/members', auth.requireAuth, wrap(async (req, res) => res.status(201).json(await auth.addMember(req.user, req.params.id, req.body || {}))));
-  app.post('/api/users/:id/reset-code', auth.requireAuth, wrap(async (req, res) => res.json(await auth.resetUserCode(req.user, req.params.id))));
+  app.post('/api/clubs/:id/approve', auth.requireAuth, auth.requireAdmin, wrap(async (req, res) => { const r = await auth.approveClub(req.user.id, req.params.id, true); broadcast({ type: 'identity' }); res.json(r); }));
+  app.post('/api/clubs/:id/reject', auth.requireAuth, auth.requireAdmin, wrap(async (req, res) => { const r = await auth.approveClub(req.user.id, req.params.id, false); broadcast({ type: 'identity' }); res.json(r); }));
+  app.post('/api/clubs/:id/members', auth.requireAuth, wrap(async (req, res) => { const r = await auth.addMember(req.user, req.params.id, req.body || {}); broadcast({ type: 'identity' }); res.status(201).json(r); }));
+  app.delete('/api/invites/:id', auth.requireAuth, wrap(async (req, res) => { const r = await auth.deleteInvite(req.user, req.params.id); broadcast({ type: 'identity' }); res.json(r); }));
+  app.post('/api/users/:id/reset-code', auth.requireAuth, wrap(async (req, res) => { const r = await auth.resetUserCode(req.user, req.params.id); broadcast({ type: 'identity' }); res.json(r); }));
 
   /* ---------- data aplikasi (dokumen berversi) + siaran langsung ke klien ---------- */
-  const clients = new Set();
-  const broadcast = ev => { const line = `data: ${JSON.stringify(ev)}\n\n`; for (const r of clients) r.write(line); };
 
   app.get('/api/state', auth.requireAuth, wrap(async (_req, res) => {
     const r = (await query('SELECT doc,version,updated_at FROM app_state WHERE id=1')).rows[0];
