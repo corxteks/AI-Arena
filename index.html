@@ -4976,6 +4976,8 @@ setInterval(()=>{if(ui.view==='tv')render();else if(ui.view==='watch'&&!ui.modal
 setInterval(()=>{if(ui.tab==='live'&&!ui.view&&!ui.modal&&isAdmin()&&!document.activeElement?.matches('input,textarea,select'))render(true)},3000);
 setInterval(()=>{if(!ui.modal&&!['umpire','tv'].includes(ui.view)&&!document.activeElement?.matches('input,textarea,select'))render(true)},60000);
 (()=>{const m=location.hash.match(/^#tv=(.+)$/);if(m){const c=decodeURIComponent(m[1]);if(COURTS.includes(c)){ui.view='tv';ui.court=c}}})();
+/* kunjungan pertama: isi data contoh otomatis agar alur bisa langsung dicoba (sekali per perangkat) */
+try{if(!localStorage.getItem('ai-arena-demo-seeded')&&!S.users.some(u=>!u.role&&!u.guest)){dummyData();localStorage.setItem('ai-arena-demo-seeded','1');save()}}catch(e){console.error('data contoh gagal',e)}
 try{migrateTour()}catch(e){console.error('migrasi data gagal',e)}
 render();
 
