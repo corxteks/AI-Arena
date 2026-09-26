@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI ARENA di iPhone 14 Pro (393 × 852)</title>
+<style>
+  html,body{margin:0;height:100%;background:#1c1f26;overflow:hidden;font-family:system-ui,sans-serif}
+  .wrap{position:fixed;left:50%;top:50%;transform-origin:center center}
+  .phone{width:393px;height:852px;border-radius:55px;padding:0;background:#000;box-shadow:0 0 0 10px #2b2f3a,0 0 0 12px #454b5a,0 30px 80px rgba(0,0,0,.6);position:relative;overflow:hidden}
+  iframe{width:393px;height:852px;border:0;border-radius:55px;background:#fff;display:block}
+  .island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:124px;height:36px;border-radius:20px;background:#000;z-index:5;pointer-events:none}
+  .home{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:140px;height:5px;border-radius:3px;background:rgba(255,255,255,.75);z-index:5;pointer-events:none}
+  .lbl{position:fixed;left:12px;bottom:10px;color:#9aa3b5;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap" id="w"><div class="phone"><iframe id="f" src="index.html" title="AI ARENA"></iframe></div></div>
+<div class="lbl">iPhone 14 Pro: 393 × 852 px (tampilan diperkecil agar muat di layar)</div>
+<script>
+  function fit(){const s=Math.min(1,(innerHeight-40)/852,(innerWidth-40)/393);document.getElementById('w').style.transform='translate(-50%,-50%) scale('+s+')'}
+  addEventListener('resize',fit);fit();
+</script>
+</body>
+</html>
