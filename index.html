@@ -620,7 +620,7 @@ details.panel.elo-info p{font-size:11.5px;line-height:1.35;margin:4px 0 0}
 .rkctl .gsub>select{padding:0 6px}
 .mecard{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 12px;margin:0 0 8px;border-radius:12px;background:linear-gradient(135deg,#DCEBFF,#EAF5FF);font-size:13px;color:#0B2545}
 .mecard .btn{margin-left:auto;width:auto}
-.pc{font-size:10.5px;font-weight:700;margin-left:4px}.pc.up{color:#16A34A}.pc.down{color:#E5354B}
+.rkpc{font-size:10.5px;font-weight:700;margin-left:4px}.rkpc.up{color:#16A34A}.rkpc.down{color:#E5354B}
 .rank-list .row.me{background:rgba(10,132,255,.1);border-radius:10px}
 .h2hb{border:1px solid var(--border);background:var(--surface);color:#0A84FF;border-radius:10px;font-size:10px;font-weight:700;padding:2px 6px;cursor:pointer;flex:none}
 .podium{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin:0 0 8px;padding:8px 6px 0}
@@ -3334,7 +3334,7 @@ function rkList(pool){
   l.sort((a,b)=>key(b)-key(a)||b.elo-a.elo);
   return {l,st,per,sort}}
 function rkVal(u,R){const s=R.st[u.id];if(R.sort==='pct')return s.p>=3?Math.round(s.w/s.p*100)+'%':'–';if(R.sort==='wins')return s.w;if(R.sort==='played')return s.p;if(R.sort==='streak')return s.best;if(R.sort==='gain'||(R.sort==='elo'&&R.per!=='all'))return (s.gain>=0?'+':'−')+Math.abs(s.gain);return u.elo}
-function rkShift(id,sh){const d=sh[id];return d>0?`<span class="pc up">▲ ${d} peringkat</span>`:d<0?`<span class="pc down">▼ ${-d} peringkat</span>`:''}
+function rkShift(id,sh){const d=sh[id];return d>0?`<span class="rkpc up">▲ ${d} peringkat</span>`:d<0?`<span class="rkpc down">▼ ${-d} peringkat</span>`:''}
 function rkRow(u,i,R,sh){const s=R.st[u.id],pb=clubsOf(u.id)[0],pct=s.p?Math.round(s.w/s.p*100):0;
   return `<div class="row${u.id===ME?' me':''}" ${u.id===ME?'id="rk-me"':''}><span class="rank r${i+1}">${i+1}</span>${avatar(u.id,'sm')}<button class="linkbtn grow" data-act="profile" data-id="${u.id}"><b>${esc(u.name)}</b>${u.id===ME?' <span class="chip ok">Kamu</span>':''}${provChip(u)}${isActive(u)?'':' <span class="chip">Tidak aktif</span>'}<div class="small muted">${pb?esc(pb.name)+', ':''}${levelText(u)}, ${s.w}–${s.p-s.w}${s.p?' ('+pct+'%)':''}${s.cur>=3?', rentetan '+s.cur:''} ${rkShift(u.id,sh)}</div></button>${u.id!==ME&&!me().role?`<button class="h2hb" data-act="cmpPlayer" data-id="${u.id}" title="Bandingkan head-to-head denganmu">H2H</button>`:''}${trendHtml(lastDelta(u))}<span class="num" style="font-size:24px">${rkVal(u,R)}</span></div>`}
 function podiumHtml(top,R){return `<div class="podium">${[1,0,2].filter(i=>top[i]).map(i=>{const u=top[i];return `<button class="pod p${i+1}" data-act="profile" data-id="${u.id}"><span class="medal">${i+1}</span>${avatar(u.id,'lg')}<b>${esc(u.name.split(' ')[0])}</b><span class="num">${rkVal(u,R)}</span></button>`}).join('')}</div>`}
