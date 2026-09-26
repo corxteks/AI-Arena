@@ -159,6 +159,53 @@ test('kode baru: ketua untuk anggotanya, bukan untuk orang lain', async () => {
   assert.equal((await api('POST', '/api/auth/login', { code: reset.body.code })).status, 409);
 });
 
+test('keluarkan, pindahkan, dan ganti ketua', async () => {
+  const adminToken = await setup();
+  const A = await makeClub(adminToken, 'PB Satu');
+  const B = await makeClub(adminToken, 'PB Dua');
+  const join = async (club, name) => {
+    const add = await api('POST', `/api/clubs/${club.clubId}/members`, { name }, club.leaderToken);
+    const lg = await api('POST', '/api/auth/login', { code: add.body.code });
+    return { id: lg.body.user.id, token: lg.body.token };
+  };
+  const m1 = await join(A, 'Anggota Satu');
+  const m2 = await join(A, 'Anggota Dua');
+  const m3 = await join(A, 'Anggota Tiga');
+  const members = async cid => (await api('GET', '/api/clubs', undefined, adminToken)).body.clubs.find(c => c.id === cid).members.map(m => m.id);
+  const leaderA = (await api('GET', '/api/me', undefined, A.leaderToken)).body.user.id;
+
+  // keluarkan: anggota biasa dan ketua PB lain ditolak; ketua tidak bisa dikeluarkan
+  assert.equal((await api('POST', `/api/clubs/${A.clubId}/members/${m1.id}/kick`, {}, m2.token)).status, 403);
+  assert.equal((await api('POST', `/api/clubs/${A.clubId}/members/${m1.id}/kick`, {}, B.leaderToken)).status, 403);
+  assert.equal((await api('POST', `/api/clubs/${A.clubId}/members/${leaderA}/kick`, {}, adminToken)).status, 409);
+  assert.equal((await api('POST', `/api/clubs/${A.clubId}/members/${m1.id}/kick`, { reason: 'Tidak aktif' }, A.leaderToken)).status, 200);
+  assert.ok(!(await members(A.clubId)).includes(m1.id));
+  assert.equal((await api('POST', `/api/clubs/${A.clubId}/members/${m1.id}/kick`, {}, A.leaderToken)).status, 404);
+
+  // pindah: hanya Super User; PB tujuan harus disetujui; ketua tidak bisa dipindah
+  assert.equal((await api('POST', `/api/clubs/${A.clubId}/members/${m2.id}/move`, { toClubId: B.clubId }, A.leaderToken)).status, 403);
+  assert.equal((await api('POST', `/api/clubs/${A.clubId}/members/${m2.id}/move`, { toClubId: A.clubId }, adminToken)).status, 400);
+  const pend = await api('POST', '/api/clubs/apply', { leaderName: 'Calon', phone: '081200000077', clubName: 'PB Belum' });
+  assert.equal((await api('POST', `/api/clubs/${A.clubId}/members/${m2.id}/move`, { toClubId: pend.body.clubId }, adminToken)).status, 409);
+  assert.equal((await api('POST', `/api/clubs/${A.clubId}/members/${leaderA}/move`, { toClubId: B.clubId }, adminToken)).status, 409);
+  const mv = await api('POST', `/api/clubs/${A.clubId}/members/${m2.id}/move`, { toClubId: B.clubId }, adminToken);
+  assert.equal(mv.status, 200);
+  assert.ok((await members(B.clubId)).includes(m2.id));
+  assert.ok(!(await members(A.clubId)).includes(m2.id));
+
+  // ganti ketua: hanya Super User; calon harus anggota PB itu
+  assert.equal((await api('POST', `/api/clubs/${A.clubId}/leader`, { userId: m3.id }, A.leaderToken)).status, 403);
+  assert.equal((await api('POST', `/api/clubs/${A.clubId}/leader`, { userId: m2.id }, adminToken)).status, 400);
+  assert.equal((await api('POST', `/api/clubs/${A.clubId}/leader`, { userId: leaderA }, adminToken)).status, 409);
+  assert.equal((await api('POST', `/api/clubs/${A.clubId}/leader`, { userId: m3.id }, adminToken)).status, 200);
+  assert.equal((await api('GET', '/api/me', undefined, m3.token)).body.role, 'ketua');
+  assert.equal((await api('GET', '/api/me', undefined, A.leaderToken)).body.role, 'anggota');
+  assert.ok((await members(A.clubId)).includes(leaderA)); // ketua lama tetap anggota
+  // ketua baru kini boleh mengelola, ketua lama tidak lagi
+  assert.equal((await api('POST', `/api/clubs/${A.clubId}/members`, { name: 'Baru Lagi' }, m3.token)).status, 201);
+  assert.equal((await api('POST', `/api/clubs/${A.clubId}/members`, { name: 'Ditolak' }, A.leaderToken)).status, 403);
+});
+
 test('kode tidak dikenal dan kosong', async () => {
   assert.equal((await api('POST', '/api/auth/login', { code: 'ZZZZZZ' })).status, 404);
   assert.equal((await api('POST', '/api/auth/login', { code: '' })).status, 400);

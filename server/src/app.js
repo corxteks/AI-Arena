@@ -61,6 +61,9 @@ export function createApp() {
   app.post('/api/clubs/:id/approve', auth.requireAuth, auth.requireAdmin, wrap(async (req, res) => { const r = await auth.approveClub(req.user.id, req.params.id, true); broadcast({ type: 'identity' }); res.json(r); }));
   app.post('/api/clubs/:id/reject', auth.requireAuth, auth.requireAdmin, wrap(async (req, res) => { const r = await auth.approveClub(req.user.id, req.params.id, false); broadcast({ type: 'identity' }); res.json(r); }));
   app.post('/api/clubs/:id/members', auth.requireAuth, wrap(async (req, res) => { const r = await auth.addMember(req.user, req.params.id, req.body || {}); broadcast({ type: 'identity' }); res.status(201).json(r); }));
+  app.post('/api/clubs/:id/members/:uid/kick', auth.requireAuth, wrap(async (req, res) => { const r = await auth.kickMember(req.user, req.params.id, req.params.uid, (req.body || {}).reason); broadcast({ type: 'identity' }); res.json(r); }));
+  app.post('/api/clubs/:id/members/:uid/move', auth.requireAuth, wrap(async (req, res) => { const r = await auth.moveMember(req.user, req.params.id, req.params.uid, (req.body || {}).toClubId); broadcast({ type: 'identity' }); res.json(r); }));
+  app.post('/api/clubs/:id/leader', auth.requireAuth, wrap(async (req, res) => { const r = await auth.changeLeader(req.user, req.params.id, (req.body || {}).userId); broadcast({ type: 'identity' }); res.json(r); }));
   app.delete('/api/invites/:id', auth.requireAuth, wrap(async (req, res) => { const r = await auth.deleteInvite(req.user, req.params.id); broadcast({ type: 'identity' }); res.json(r); }));
   app.post('/api/users/:id/reset-code', auth.requireAuth, wrap(async (req, res) => { const r = await auth.resetUserCode(req.user, req.params.id); broadcast({ type: 'identity' }); res.json(r); }));
 

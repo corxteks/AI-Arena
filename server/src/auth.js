@@ -198,3 +198,49 @@ export async function deleteInvite(user, inviteId) {
     return { deleted: inviteId };
   });
 }
+
+/** Keluarkan anggota dari PB (bukan ketua). Ketua PB itu atau Super User. */
+export async function kickMember(user, clubId, targetId, reason = '') {
+  return tx(async db => {
+    const c = await assertCanManage(db, user, clubId);
+    if (c.leader_id === targetId) throw new HttpError(409, 'Ketua tidak bisa dikeluarkan. Ganti ketua dulu.');
+    const r = await db.query('DELETE FROM club_members WHERE club_id=$1 AND user_id=$2', [clubId, targetId]);
+    if (!r.rowCount) throw new HttpError(404, 'Anggota tidak ada di PB ini.');
+    await db.query(`INSERT INTO audit_log (actor_id,action,detail) VALUES ($1,'member_kick',$2)`, [user.id, { club: clubId, user: targetId, reason: String(reason).slice(0, 200) }]);
+    return { clubId, userId: targetId, clubName: c.name };
+  });
+}
+
+/** Pindahkan anggota ke PB lain yang sudah disetujui. Hanya Super User. */
+export async function moveMember(user, clubId, targetId, toClubId) {
+  if (user.role !== 'superadmin') throw new HttpError(403, 'Hanya Super User.');
+  if (!toClubId || toClubId === clubId) throw new HttpError(400, 'Pilih PB tujuan yang berbeda.');
+  return tx(async db => {
+    const from = (await db.query('SELECT * FROM clubs WHERE id=$1 FOR UPDATE', [clubId])).rows[0];
+    const to = (await db.query('SELECT * FROM clubs WHERE id=$1 FOR UPDATE', [toClubId])).rows[0];
+    if (!from || !to) throw new HttpError(404, 'PB tidak ditemukan.');
+    if (to.status !== 'approved') throw new HttpError(409, 'PB tujuan belum disetujui.');
+    if (from.leader_id === targetId) throw new HttpError(409, 'Ketua tidak bisa dipindahkan. Ganti ketua dulu.');
+    const r = await db.query('DELETE FROM club_members WHERE club_id=$1 AND user_id=$2', [clubId, targetId]);
+    if (!r.rowCount) throw new HttpError(404, 'Anggota tidak ada di PB asal.');
+    await db.query('INSERT INTO club_members (club_id,user_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [toClubId, targetId]);
+    await db.query(`INSERT INTO audit_log (actor_id,action,detail) VALUES ($1,'member_move',$2)`, [user.id, { from: clubId, to: toClubId, user: targetId }]);
+    return { userId: targetId, from: { id: from.id, name: from.name }, to: { id: to.id, name: to.name } };
+  });
+}
+
+/** Ganti ketua PB ke salah satu anggotanya. Hanya Super User. Ketua lama tetap anggota. */
+export async function changeLeader(user, clubId, newLeaderId) {
+  if (user.role !== 'superadmin') throw new HttpError(403, 'Hanya Super User.');
+  return tx(async db => {
+    const c = (await db.query('SELECT * FROM clubs WHERE id=$1 FOR UPDATE', [clubId])).rows[0];
+    if (!c) throw new HttpError(404, 'PB tidak ditemukan.');
+    if (c.status !== 'approved') throw new HttpError(409, 'PB belum disetujui.');
+    if (c.leader_id === newLeaderId) throw new HttpError(409, 'Orang itu sudah menjadi ketua.');
+    const m = await db.query('SELECT 1 FROM club_members WHERE club_id=$1 AND user_id=$2', [clubId, newLeaderId]);
+    if (!m.rowCount) throw new HttpError(400, 'Ketua baru harus anggota PB ini.');
+    await db.query('UPDATE clubs SET leader_id=$2 WHERE id=$1', [clubId, newLeaderId]);
+    await db.query(`INSERT INTO audit_log (actor_id,action,detail) VALUES ($1,'leader_change',$2)`, [user.id, { club: clubId, from: c.leader_id, to: newLeaderId }]);
+    return { clubId, oldLeaderId: c.leader_id, newLeaderId };
+  });
+}
