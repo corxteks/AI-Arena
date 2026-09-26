@@ -3256,7 +3256,7 @@ function vChallenges(){
   const inc=S.challenges.filter(c=>c.status==='pending'&&c.to.includes(ME));
   const opn=S.challenges.filter(c=>c.status==='open'&&eligibleOpen(c,ME));
   const sent=S.challenges.filter(c=>['pending','open'].includes(c.status)&&c.from.includes(ME));
-  const hist=S.challenges.filter(c=>!['pending','open'].includes(c.status)&&(c.from.includes(ME)||c.to.includes(ME)||c.acceptedBy===ME)).sort((a,b)=>b.created-a.created).slice(0,6);
+  const hist=S.challenges.filter(c=>!['pending','open','cancelled'].includes(c.status)&&(c.from.includes(ME)||c.to.includes(ME)||c.acceptedBy===ME)).sort((a,b)=>b.created-a.created).slice(0,6);
   const rec=chRecord(ME);
   const sec=(t,list,mode,empty)=>`<section class="sec"><h2>${t}</h2>${list.length?list.map(c=>chCard(c,mode)).join(''):`<p class="muted small">${empty}</p>`}</section>`;
   return `<div class="panel hotp"><div class="row"><div class="grow"><h3>Mode menantang</h3><span class="small muted">Tantang pemain mana pun di GOR. Hasilnya masuk ELO dan peringkat seperti laga biasa.</span></div><div style="text-align:right"><span class="small muted">Rekor tantangan</span><div class="num" style="font-size:26px">${rec.w}–${rec.n-rec.w}</div></div></div>
