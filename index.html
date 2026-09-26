@@ -2427,6 +2427,15 @@ body .hmore>summary::-webkit-details-marker{display:none}
 body .hmore[open]>summary{margin-bottom:8px}
 :root[data-theme="dark"] body .hmore>summary{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14)}
 body .tabsw{display:flex;align-items:center;gap:10px;margin:8px 0;padding:10px 12px}body .tabsw small{display:block;font-size:12px;color:var(--muted,#6b7a73)}
+/* Peringkat di layar sempit: beri ruang untuk nama */
+@media (max-width:430px){
+body .row:has(>.h2hb){gap:6px!important}
+body .row:has(>.h2hb)>.tr{display:none!important}
+body .row:has(>.h2hb)>.h2hb{padding:2px 6px!important;font-size:10px!important;min-height:0!important}
+body .row:has(>.h2hb)>.num{font-size:20px!important}
+body .row:has(>.h2hb)>.linkbtn b{display:inline;word-break:normal;overflow-wrap:anywhere}
+body .row:has(>.h2hb)>.linkbtn .chip{font-size:10px!important;padding:1px 6px!important;vertical-align:1px}
+}
 </style>
 </head>
 <body>
