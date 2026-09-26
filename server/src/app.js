@@ -14,6 +14,8 @@ const wrap = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch
 export function createApp() {
   const app = express();
   app.disable('x-powered-by');
+  // Di belakang reverse proxy (nginx, dsb.) isi TRUST_PROXY=1 agar batas percobaan dihitung per alamat asli, bukan per proxy.
+  if (config.trustProxy) app.set('trust proxy', config.trustProxy);
   app.use(helmet({ crossOriginResourcePolicy: false }));
   // Jaringan lokal (localhost dan IP pribadi) hanya diizinkan bila CORS_ALLOW_LAN=1, untuk mencoba dari HP di Wi-Fi yang sama.
   const LAN = /^https?:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/;
@@ -48,14 +50,14 @@ export function createApp() {
     const admin = req.user.role === 'superadmin';
     const led = admin ? null : await auth.ledClubs(req.user.id);
     const clubs = (await query(`SELECT c.*, u.name AS leader_name FROM clubs c JOIN users u ON u.id=c.leader_id ORDER BY c.created_at`)).rows;
-    const out = [];
-    for (const c of clubs) {
+    const mem = (await query(`SELECT m.club_id,u.id,u.name,u.elo,u.level,u.code_used,u.code FROM club_members m JOIN users u ON u.id=m.user_id ORDER BY u.name`)).rows;
+    const inv = (await query('SELECT id,club_id,name,phone,code FROM invites ORDER BY created_at')).rows;
+    const out = clubs.map(c => {
       const canSee = admin || (led && led.includes(c.id));
-      const members = (await query(
-        `SELECT u.id,u.name,u.elo,u.level,u.code_used${canSee ? ',u.code' : ''} FROM club_members m JOIN users u ON u.id=m.user_id WHERE m.club_id=$1 ORDER BY u.name`, [c.id])).rows;
-      const invites = canSee ? (await query('SELECT id,name,phone,code FROM invites WHERE club_id=$1 ORDER BY created_at', [c.id])).rows : [];
-      out.push({ id: c.id, name: c.name, status: c.status, leaderId: c.leader_id, leaderName: c.leader_name, code: canSee ? c.code : undefined, elo: c.elo, played: c.played, wins: c.wins, members, invites });
-    }
+      const members = mem.filter(m => m.club_id === c.id).map(({ club_id, code, ...m }) => (canSee ? { ...m, code } : m));
+      const invites = canSee ? inv.filter(i => i.club_id === c.id).map(({ club_id, ...i }) => i) : [];
+      return { id: c.id, name: c.name, status: c.status, leaderId: c.leader_id, leaderName: c.leader_name, code: canSee ? c.code : undefined, elo: c.elo, played: c.played, wins: c.wins, members, invites };
+    });
     res.json({ clubs: out });
   }));
   app.post('/api/clubs/:id/approve', auth.requireAuth, auth.requireAdmin, wrap(async (req, res) => { const r = await auth.approveClub(req.user.id, req.params.id, true); broadcast({ type: 'identity' }); res.json(r); }));
@@ -106,7 +108,7 @@ export function createApp() {
   // Callback OAuth: dipanggil browser oleh Google tanpa header Authorization, jadi diamankan lewat parameter state bertanda tangan.
   app.get('/api/youtube/oauth/callback', wrap(async (req, res) => {
     let st;
-    try { st = jwt.verify(String(req.query.state || ''), config.jwtSecret); } catch { throw new HttpError(400, 'State tidak valid atau kedaluwarsa.'); }
+    try { st = jwt.verify(String(req.query.state || ''), config.jwtSecret, { algorithms: ['HS256'] }); } catch { throw new HttpError(400, 'State tidak valid atau kedaluwarsa.'); }
     if (st.purpose !== 'youtube') throw new HttpError(400, 'State tidak valid.');
     if (req.query.error) throw new HttpError(400, 'Akses ditolak di Google: ' + String(req.query.error));
     const r = await yt.handleCallback(String(req.query.code || ''));

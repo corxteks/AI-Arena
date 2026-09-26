@@ -23,7 +23,7 @@ export class HttpError extends Error {
 }
 
 export const signToken = user => jwt.sign({ sub: user.id, role: user.role }, config.jwtSecret, { expiresIn: config.jwtExpiresIn });
-export const verifyToken = t => jwt.verify(t, config.jwtSecret);
+export const verifyToken = t => jwt.verify(t, config.jwtSecret, { algorithms: ['HS256'] });
 
 /** Enkripsi AES-256-GCM untuk token YouTube. Format: iv.tag.data (base64url). */
 export function encrypt(plain) {
