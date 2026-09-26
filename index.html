@@ -2319,6 +2319,31 @@ body .grpgrid>.grpcard{min-width:0;width:auto!important;max-width:none!important
 .usetup .un b{font-size:12.5px!important}.usetup .un small{font-size:10.5px!important}
 .usetup .ubtn.sm,.ump .usetup .ubtn.sm{min-height:24px!important;height:24px!important;padding:0 8px!important;font-size:11px!important;border-radius:5px!important}
 .usetup .ustart{width:100%;margin-top:6px;min-height:34px!important;height:34px!important;font-size:13px!important;border-radius:6px!important;justify-content:center}
+.cbdw{position:relative}
+.cbdw .cnav{position:absolute;top:calc(50% + 14px);z-index:3;width:28px;height:28px;border-radius:6px;border:1px solid rgba(255,255,255,.75);background:rgba(255,255,255,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#111B3A;font-size:20px;line-height:1;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 0 3px;cursor:pointer;box-shadow:0 4px 12px rgba(30,45,110,.2)}
+.cbdw .cnav.l{left:2px}.cbdw .cnav.r{right:2px}
+.cbdw .cnav:active{transform:scale(.9)}
+body .pager{display:flex!important;justify-content:space-between;gap:8px}body .pager .btn{flex:1 1 0}
+body .pager.pnum{display:flex!important;justify-content:center;gap:6px}
+body .pager.pnum .btn{flex:0 0 auto!important;min-width:34px;width:auto;height:32px!important;min-height:32px!important;padding:0 10px!important;font-size:13px!important;font-weight:800;border-radius:6px!important}
+body .pager.pnum .btn[aria-pressed="true"]{box-shadow:0 4px 10px rgba(47,78,240,.2)!important}
+body .pager.pnum .pdots{align-self:center;color:#3D4A6E;font-weight:800}
+/* audit UI: cegah gulir samping halaman, teks terlalu kecil */
+body .fchips{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;flex-wrap:nowrap}
+body .fchips::-webkit-scrollbar{display:none}
+body .fchips .fchip{flex:0 0 auto}
+body .bd td em{font-size:11px!important}
+body .bd td .vs2{font-size:10.5px!important}
+body article.match .mchips .chip{font-size:10.5px!important}
+body .ec-s span,body .ec-leg{font-size:10.5px!important}
+html,body{overflow-x:hidden}
+body .tinfo,body .bk-m,body .bracket .bk-m{background:rgba(255,255,255,.30)!important;backdrop-filter:blur(12px) saturate(1.4);-webkit-backdrop-filter:blur(12px) saturate(1.4);border:1px solid rgba(255,255,255,.62)!important;border-radius:8px!important;box-shadow:0 8px 22px rgba(30,45,110,.10)!important}
+body .bd th{background:rgba(255,255,255,.22)!important}
+body .bd td.gck{background:rgba(255,255,255,.38)!important}
+body .bd td.gck.dn{background:rgba(47,185,163,.22)!important}
+body main.shell .muted,body main.shell p.small.muted,body main.shell .small.muted{color:#4A5678}
+:root[data-theme="dark"] body main.shell .muted{color:#A9B5DA}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) body main.shell .muted{color:#A9B5DA}}
 </style>
 </head>
 <body>
@@ -2914,7 +2939,7 @@ const fmtDur=ms=>{const m=Math.max(0,Math.round(ms/MIN));return m>=60?Math.floor
 const mPlayMs=m=>{const st=m.startedAt||(m.status==='playing'?m.t:0);if(!st)return 0;if(m.status==='playing')return Date.now()-st;if(['verified','pending','disputed'].includes(m.status)){const e=m.submittedAt||m.t;return e>st?e-st:0}return 0};
 const shLog=(m,to)=>{(m.sh=m.sh||[]).push({t:Date.now(),by:ME,from:m.court+' '+ftime(mwhen(m)),to})};
 function vCourtBoard(ms){const adm=isAdmin();
-  return `<section class="sec"><h2>Lapangan</h2><div class="cbd cbd2">${COURTS.map(c=>{
+  return `<section class="sec cbdw"><h2>Lapangan</h2><button class="cnav l" data-act="cbdNav" data-d="-1" aria-label="Lapangan sebelumnya">‹</button><button class="cnav r" data-act="cbdNav" data-d="1" aria-label="Lapangan berikutnya">›</button><div class="cbd cbd2">${COURTS.map(c=>{
     const all=ms.filter(m=>m.court===c),pl=all.find(m=>m.status==='playing'),nx=all.filter(m=>m.status==='scheduled'&&!m.tbd).sort((a,b)=>mwhen(a)-mwhen(b))[0];
     const est=nx?(mEst(nx)||mwhen(nx)):0,late=!!nx&&est-mwhen(nx)>=5*MIN,calls=nx?(nx.calls||[]):[],mine=[pl,nx].some(m=>m&&players(m).includes(ME));
     const row=(m,k)=>`<div class="ccr"><span>${esc(names(k==='a'?m.teamA:m.teamB))}</span><b>${m.cur?m.cur[k]:gamesWon(m,k)}</b></div>`;
@@ -3146,7 +3171,8 @@ function vChallenges(){
 }
 const RANK_PER_PAGE=10;
 function pageOf(total,key){const pages=Math.max(1,Math.ceil(total/RANK_PER_PAGE)),p=Math.min(Math.max(0,ui.rankPage[key]||0),pages-1);return{p,pages,key,from:p*RANK_PER_PAGE,to:(p+1)*RANK_PER_PAGE,total}}
-const pagerHtml=g=>g.pages<=1?'':`<div class="pager"><button class="btn xs gal ghost" data-act="rankPage" data-k="${g.key}" data-p="${g.p-1}" ${g.p===0?'disabled':''}>‹ Sebelumnya</button><span class="small muted">Halaman ${g.p+1} dari ${g.pages} (${g.from+1}–${Math.min(g.to,g.total)} dari ${g.total})</span><button class="btn xs gal ghost" data-act="rankPage" data-k="${g.key}" data-p="${g.p+1}" ${g.p>=g.pages-1?'disabled':''}>Berikutnya ›</button></div>`;
+const pagerHtml=g=>{if(g.pages<=1)return '';const nums=[];for(let i=0;i<g.pages;i++){if(g.pages<=7||i===0||i===g.pages-1||Math.abs(i-g.p)<=1)nums.push(i);else if(nums[nums.length-1]!=='…')nums.push('…')}
+  return `<div class="pager pnum" role="navigation" aria-label="Halaman"><button class="btn xs gal ghost" data-act="rankPage" data-k="${g.key}" data-p="${g.p-1}" ${g.p===0?'disabled':''} aria-label="Halaman sebelumnya">‹</button>${nums.map(n=>n==='…'?'<span class="pdots">…</span>':`<button class="btn xs gal ghost" data-act="rankPage" data-k="${g.key}" data-p="${n}" aria-pressed="${n===g.p}" aria-label="Halaman ${n+1}" ${n===g.p?'aria-current="page"':''}>${n+1}</button>`).join('')}<button class="btn xs gal ghost" data-act="rankPage" data-k="${g.key}" data-p="${g.p+1}" ${g.p>=g.pages-1?'disabled':''} aria-label="Halaman berikutnya">›</button></div>`};
 const RSORT=[['elo','Urut: ELO'],['pct','Persentase menang'],['wins','Menang terbanyak'],['played','Laga terbanyak'],['streak','Rentetan menang'],['gain','Naik ELO']];
 const RPER=[['all','Semua waktu'],['bln','Bulan ini'],['90','3 bulan']];
 const RGRP=[['all','Semua'],['A','A'],['B','B'],['C','C'],['D','D'],['E','E'],['belum','Belum dinilai']];
@@ -4785,6 +4811,7 @@ const A={
       else{m.cur=newCur(m.teamA,m.teamB,s);toast('Gim '+m.games.length+' untuk '+names(s==='a'?m.teamA:m.teamB)+'. Istirahat 2 menit.')}}
     logSnap(m);commit()},
   uStart(){const m=match(ui.matchId),c=m&&m.cur;if(!c)return;c.go=true;if(!m.startedAt&&!m.games.length)m.startedAt=Date.now();commit(m.games.length?'Gim '+(m.games.length+1)+' dimulai.':'Pertandingan dimulai.')},
+  cbdNav(d){const e=document.querySelector('.cbd2');if(e)e.scrollBy({left:(+d.d)*e.clientWidth*.86,behavior:'smooth'})},
   uSwapPos(d){const m=match(ui.matchId),c=m&&m.cur;if(!c||c.a+c.b!==0)return;const p=c.pos[d.side];if(p&&p.L!=null){[p.R,p.L]=[p.L,p.R];c.srv=c.pos[c.server][c[c.server]%2===0?'R':'L']||c.pos[c.server].R;commit()}},
   uFirst(d){const m=match(ui.matchId),c=m&&m.cur;if(!c||c.a+c.b!==0||m.games.length)return;c.server=d.side;c.srv=c.pos[d.side].R;commit()},
   uFlip(){const m=match(ui.matchId);if(!m||!m.cur)return;m.flip=!m.flip;const g=m.games.length;if(g===2&&Math.max(m.cur.a,m.cur.b)===11)m.swapMid=true;else m.swapAt=g;commit('Sisi lapangan ditukar.')},
