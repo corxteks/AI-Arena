@@ -2395,6 +2395,26 @@ body .tsw{display:flex;gap:4px;padding:3px;border-radius:6px;background:rgba(255
 body .tsw button{height:26px;min-height:26px;padding:0 9px;font-size:11.5px;font-weight:800;border-radius:4px;border:1px solid transparent;background:transparent;color:#3D4A6E;cursor:pointer;white-space:nowrap}
 :root[data-theme="dark"] body .tsw{background:rgba(20,27,69,.55);border-color:rgba(255,255,255,.14)}
 :root[data-theme="dark"] body .tsw button{color:#A9B5DA}
+.prof-embed>.back,.prof-embed>.btn.back{display:none!important}
+:root[data-theme="dark"] body .pstats .stat span,:root[data-theme="dark"] body .stat span{color:#A9B5DA!important}
+:root[data-theme="dark"] body .pstats .stat b,:root[data-theme="dark"] body .stat b{color:#E8ECFA!important}
+
+.loginp{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;padding:24px 20px 40px;text-align:center}
+.loginp .lg-logo img{width:110px;height:110px;object-fit:contain;filter:drop-shadow(0 6px 12px rgba(15,22,54,.3))}
+.loginp .lg-h{font-size:24px;margin:10px 0 4px}.loginp .lg-p{max-width:320px;margin:0 auto 14px}
+.loginp .lg-box{width:100%;max-width:360px;text-align:left;display:flex;flex-direction:column;gap:8px}
+.loginp .lg-box label{font-size:12px;font-weight:800;color:#3D4A6E}
+.loginp .lg-box input{height:48px;font-size:22px;font-weight:800;letter-spacing:.25em;text-align:center;text-transform:uppercase;border-radius:8px}
+.loginp .lg-err{min-height:16px;color:#C93444;margin:0;text-align:center}
+.loginp .lg-demo{width:100%;max-width:360px;margin-top:12px;text-align:left}
+.loginp .lg-demo summary{cursor:pointer}
+.codechip{font-weight:800;letter-spacing:.12em;cursor:pointer;background:rgba(245,165,36,.20)!important;color:#8A5200!important;border:1px dashed rgba(245,165,36,.6)!important}
+:root[data-theme="dark"] .codechip{color:#FFCB7A!important}
+:root[data-theme="dark"] .loginp .lg-box label{color:#A9B5DA}
+.loginp .lg-regbtn{max-width:360px;margin-top:10px}
+.loginp .lg-box .lg-t{height:40px;font-size:15px;letter-spacing:0;text-transform:none;text-align:left;font-weight:600;border-radius:8px}
+.loginp .lg-box textarea.lg-t{height:auto;padding:8px 10px}
+.loginp .lg-reg h2{font-size:17px;margin:0 0 4px}
 </style>
 </head>
 <body>
@@ -2492,8 +2512,30 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));return true}catc
 let S=load()||seed();
 S.courtSched=S.courtSched||[];
 S.auditLog=S.auditLog||[];
-let ME=(()=>{try{return sessionStorage.getItem(KEY+':me')||'ade'}catch(e){return 'ade'}})();
-function setMe(id){ME=id;try{sessionStorage.setItem(KEY+':me',id)}catch(e){}}
+const LOGIN_KEY=KEY+':login';
+let ME=(()=>{try{return sessionStorage.getItem(KEY+':me')||localStorage.getItem(LOGIN_KEY)||'ade'}catch(e){return 'ade'}})();
+let LOGGED=(()=>{try{const id=localStorage.getItem(LOGIN_KEY);return !!id&&S.users.some(u=>u.id===id)}catch(e){return false}})();
+function setMe(id){ME=id;LOGGED=true;try{sessionStorage.setItem(KEY+':me',id);localStorage.setItem(LOGIN_KEY,id)}catch(e){}}
+if(S.adminClaimed===undefined&&LOGGED&&ME==='ade'){S.adminClaimed=true;try{save()}catch(e){}}
+const CODE_CH='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const codeTaken=c=>S.adminCode===c||S.users.some(u=>u.code===c)||S.clubs.some(k=>(k.invites||[]).some(i=>i.code===c));
+const newLoginCode=()=>{let c;do{c=Array.from({length:6},()=>CODE_CH[Math.floor(Math.random()*CODE_CH.length)]).join('')}while(codeTaken(c));return c};
+function ensureCodes(){let ch=false;
+  S.users.forEach(u=>{if(!u.role&&!u.guest&&!u.code){u.code=newLoginCode();ch=true}});
+  S.clubs.forEach(k=>(k.invites||[]).forEach(i=>{if(!i.code){i.code=newLoginCode();ch=true}}));
+  if(ch){try{save()}catch(e){}}}
+const myCode=u=>u&&u.code;
+function vSetup(){return `<main class="shell enter loginp"><div class="lg-logo"><img src="${LOGO_SRC}" alt="AI Arena"></div>
+  <h1 class="lg-h">Selamat datang di ${APP}</h1><p class="small muted lg-p">Aplikasi ini belum punya pengelola. Isi data pengelola GOR (Super User). Ini hanya dilakukan sekali. Setelah itu ketua PB dan anggota masuk dengan kode dari kamu.</p>
+  <div class="panel lg-box lg-reg"><label for="lgAN">Nama pengelola</label><input id="lgAN" class="lg-t" maxlength="40" autocomplete="off" placeholder="Nama lengkap"><label for="lgAH">Nomor HP (opsional)</label><input id="lgAH" class="lg-t" type="tel" inputmode="tel" maxlength="16" placeholder="081234567890"><button class="btn full" data-act="setupAdmin">Mulai sebagai pengelola</button></div></main>`}
+function vLogin(){ensureCodes();const ex=[];const adm=S.adminCode,lead=S.clubs.find(c=>c.status==='approved'&&user(c.leaderId)&&user(c.leaderId).code&&!user(c.leaderId).codeUsed),inv=S.clubs.map(c=>(c.invites||[]).map(i=>({c,i}))).flat()[0],mem=S.users.find(u=>!u.role&&!u.guest&&u.code&&!u.codeUsed&&!S.clubs.some(c=>c.leaderId===u.id));
+  if(lead)ex.push(['Ketua '+lead.name,user(lead.leaderId).code]);if(mem)ex.push(['Anggota ('+mem.name+')',mem.code]);if(inv)ex.push(['Calon anggota ('+inv.i.name+')',inv.i.code]);
+  return `<main class="shell enter loginp"><div class="lg-logo"><img src="${LOGO_SRC}" alt="AI Arena"></div>
+  <h1 class="lg-h">Selamat datang di ${APP}</h1><p class="small muted lg-p">Masukkan kode yang kamu terima dari ketua PB atau pengelola GOR. Kamu akan langsung masuk dengan namamu.</p>
+  <div class="panel lg-box"><label for="lgCode">Kode masuk</label><input id="lgCode" maxlength="12" placeholder="K7M2XQ" autocomplete="off" autocapitalize="characters" spellcheck="false">
+  <button class="btn full" data-act="loginCode">Masuk</button><p class="small lg-err" id="lgErr" role="alert"></p></div>
+  ${ui.lgReg==='form'?`<div class="panel lg-box lg-reg"><h2>Ajukan PB baru</h2><label for="lgKN">Nama ketua</label><input id="lgKN" class="lg-t" maxlength="40" autocomplete="off"><label for="lgHp">Nomor HP ketua</label><input id="lgHp" class="lg-t" type="tel" inputmode="tel" maxlength="16" placeholder="081234567890"><label for="lgPB">Nama PB</label><input id="lgPB" class="lg-t" maxlength="40" autocomplete="off"><label for="lgAng">Nama anggota (satu nama per baris, opsional)</label><textarea id="lgAng" class="lg-t" rows="4" maxlength="800" placeholder="Budi&#10;Citra&#10;Dewi"></textarea><button class="btn full" data-act="lgRegister">Kirim pendaftaran</button><button class="btn ghost full" data-act="lgRegBack">Batal</button></div>`:ui.lgReg==='done'?`<div class="panel lg-box"><h2>Pendaftaran terkirim</h2><p class="small">PB <b>${esc((ui.lgRegInfo||{}).pb||'')}</b> menunggu konfirmasi pengelola GOR (Super User). Setelah disetujui, kamu akan menerima <b>kode masuk</b> dari pengelola. Masukkan kode itu di sini untuk masuk sebagai ketua.</p><button class="btn full" data-act="lgRegBack">Kembali</button></div>`:`<button class="btn ghost full lg-regbtn" data-act="lgReg">Ajukan PB baru</button>`}
+  <details class="panel lg-demo"><summary><b>Kode contoh untuk mencoba</b></summary>${ex.map(x=>`<div class="row"><div class="grow"><b>${esc(x[0])}</b></div><button class="chip codechip" data-act="fillCode" data-c="${esc(x[1])}">${esc(x[1])}</button></div>`).join('')}<p class="small muted" style="margin:6px 0 0">Ketuk kode untuk mengisinya otomatis.</p></details></main>`}
 const UI_KEY='ai-arena-ui-v1';
 let ui={open:{},courtPage:null,zoom:null,nilaiF:'all',nilaiPB:'',memStat:'all',memQ:'',nilaiQ:'',rankPage:{},memCourt:'all',tab:'home',view:null,modal:null,rankTab:'pemain',mTab:'laga',galTab:'all',galQ:'',galF:'all',galSort:'new',galView:'tgl',galAlbum:'',rankClub:null,clubSel:null,room:null,matchId:null,profileId:null,h2h:null,court:null,delay:4,nUser:null,nCount:0};
 try{const su=JSON.parse(localStorage.getItem(UI_KEY));if(su&&typeof su==='object')Object.assign(ui,su)}catch(e){}
@@ -3625,6 +3667,9 @@ function vMenu(){
   const cur=admin?'super':leaderClubs().length?'ketua':'anggota',RL=[['super','Super User'],['ketua','Ketua PB'],['anggota','Anggota']];
   const roleSw=`<section class="sec rolesw"><h2>Peran akun</h2><div class="tabs sm cseg" role="group" aria-label="Peran akun">${RL.map(r=>`<button aria-pressed="${cur===r[0]}" data-act="setRole" data-r="${r[0]}">${r[1]}</button>`).join('')}</div><p class="small muted">Masuk sebagai <b>${esc(u.name)}</b>, ${esc(roleLabel(u))}.</p></section>`;
   const tp=themePref(),themeSw=`<div class="tsw" role="group" aria-label="Tampilan">${[['light','Terang'],['dark','Gelap'],['auto','Otomatis']].map(x=>`<button aria-pressed="${tp===x[0]}" data-act="setTheme" data-th="${x[0]}">${x[1]}</button>`).join('')}</div>`;
+  if(!admin&&!leaderClubs().length){const pid=ui.profileId;ui.profileId=ME;let pv='';try{pv=vProfile()}catch(e){pv=''}ui.profileId=pid;
+    return `<section class="ptitle tsrow"><h1>Profil</h1>${themeSw}</section>
+  ${roleSw}<div class="prof-embed">${pv}</div>`}
   return `<section class="ptitle tsrow"><h1>Menu</h1>${themeSw}</section>
   ${roleSw}
   <div class="prof"><label class="av avsq" title="Ketuk untuk mengunggah foto" tabindex="0">${u.photo?`<img src="${u.photo}" alt="Foto ${esc(u.name)}">`:esc(initials(u.name))}<span class="avcam" aria-hidden="true">${svg('gallery')}</span><input type="file" accept="image/*" data-change="avUp" aria-label="Unggah foto profil" hidden></label><div><b>${esc(u.name)}</b><small>${esc(roleLabel(u))}</small></div></div>
@@ -3681,7 +3726,7 @@ const addRoster=(pbName,names)=>{const key=memberKey(pbName),c=S.clubs.find(x=>m
 const inviteMatch=(c,u)=>(c.invites||[]).find(i=>(i.phone&&u.phone&&normHp(i.phone)===normHp(u.phone))||((!i.phone||!u.phone)&&i.name.trim().toLowerCase()===String(u.name||'').trim().toLowerCase()));
 function clubRoster(c){if(!canLead(c)||c.status!=='approved')return '';const inv=c.invites||[],full=c.maxMembers&&c.members.length>=c.maxMembers;
   return `<section class="sec psec"><h2>Anggota</h2><div class="panel"><div class="row"><div class="grow"><b>${c.members.length} anggota${c.maxMembers?' dari maks '+c.maxMembers:''}</b><div class="small muted">Tambahkan nama anggota, atau minta mereka bergabung dengan kode di atas.</div></div><button class="btn xs" data-act="openModal" data-m="addMember" data-id="${c.id}" ${full?'disabled':''}>Tambah anggota</button></div>
-  ${inv.length?`<div class="small muted dlab">Calon anggota (${inv.length}), otomatis diterima saat bergabung dengan kode</div>${inv.map(i=>`<div class="row"><div class="grow"><b>${esc(i.name)}</b>${i.phone?`<div class="small muted">${esc(i.phone)}</div>`:''}</div><button class="btn xs danger" data-act="delInvite" data-id="${c.id}" data-i="${i.id}">Hapus</button></div>`).join('')}`:''}</div></section>`}
+  ${inv.length?`<div class="small muted dlab">Calon anggota (${inv.length}), otomatis diterima saat bergabung dengan kode</div>${inv.map(i=>`<div class="row"><div class="grow"><b>${esc(i.name)}</b>${i.code?` <span class="chip codechip" role="button" tabindex="0" data-act="copyLogin" data-c="${esc(i.code)}">Kode ${esc(i.code)}</span>`:''}${i.phone?`<div class="small muted">${esc(i.phone)}</div>`:''}</div><button class="btn xs danger" data-act="delInvite" data-id="${c.id}" data-i="${i.id}">Hapus</button></div>`).join('')}`:''}</div></section>`}
 function genCode(c){let code;do{code=c.name.replace(/^PB\s*/i,'').replace(/[^A-Za-z]/g,'').slice(0,3).toUpperCase().padEnd(3,'X')+'-'+(1000+Math.floor(Math.random()*9000))}while(S.clubs.some(x=>x.code===code&&x.id!==c.id));return code}
 function reviewClash(c){const conf=[];S.courtSched.filter(x=>x.kind==='tetap'&&x.court===c.court&&x.day===c.day&&x.end>=Date.now()).forEach(x=>conf.push(x.name+' ('+x.time+')'));S.clubs.filter(x=>x.id!==c.id&&x.status==='approved'&&x.court===c.court&&x.day===c.day).forEach(x=>{if(!conf.some(y=>y.startsWith(x.name)))conf.push(x.name+' ('+x.time+')')});return conf}
 function mList(){const q=(ui.mQ||'').trim().toLowerCase(),f=ui.mF||'all';
@@ -3742,7 +3787,8 @@ function vClubPage(id){
   const codeInfo=c.code?`${esc(c.code)}${c.codeExp?', berlaku s.d. '+sdate(c.codeExp):''}${c.maxMembers?', maks '+c.maxMembers+' anggota':''}`:'-';
   return `${back()}<div class="pcard cpc" style="--c:${clubColor(c)}"><div class="pph">${clubAv(c,'lg')}</div><div class="pinfo"><h1>${esc(c.name)}</h1><p class="small muted">${esc(c.desc||'Belum ada deskripsi PB.')}</p><div class="pchips">${cstChip(c)}${c.until?`<span class="chip warn">Sampai ${sdate(c.until)}</span>`:''}${c.createdAt?`<span class="chip">Sejak ${sdate(c.createdAt)}</span>`:''}</div></div></div>
   ${lead&&(c.requests||[]).length?`<section class="sec psec"><h2>Permintaan bergabung</h2><div class="panel">${c.requests.map(id=>user(id)?`<div class="row"><div class="grow"><b>${esc(user(id).name)}</b><div class="small muted">${levelText(user(id))}, ELO ${user(id).elo}</div></div><button class="btn xs" data-act="reqAct" data-c="${c.id}" data-id="${id}" data-ok="1">Terima</button><button class="btn xs danger" data-act="reqAct" data-c="${c.id}" data-id="${id}" data-ok="0">Tolak</button></div>`:'').join('')}</div></section>`:''}
-  <section class="sec psec"><h2>Anggota (${ms.length})</h2><div class="panel">${ms.map(u=>{const n=clubsOf(u.id).length;return `<div class="row"><span>${avatar(u.id,'sm')}</span><button class="linkbtn grow" data-act="profile" data-id="${u.id}"><b>${esc(u.name)}</b>${u.id===c.leaderId?' <span class="chip ok">Ketua</span>':''}${n>1?` <span class="chip warn">${n} PB</span>`:''}${isActive(u)?'':' <span class="chip bad">Kedaluwarsa</span>'}<div class="small muted">${levelText(u)}, ELO ${u.elo}, aktif s.d. ${sdate(u.lastScan+30*DAY)}</div></button>${lead&&u.id!==c.leaderId?`${adm?`<button class="btn xs ghost" data-act="openModal" data-m="moveMember" data-id="${c.id}" data-uid="${u.id}">Pindah</button>`:''}<button class="btn xs danger" data-act="openModal" data-m="kickMember" data-id="${c.id}" data-uid="${u.id}">Keluarkan</button>`:''}</div>`}).join('')||'<p class="small muted">Belum ada anggota.</p>'}</div></section>
+  ${clubRoster(c)}
+  <section class="sec psec"><h2>Anggota (${ms.length})</h2><div class="panel">${ms.map(u=>{const n=clubsOf(u.id).length;return `<div class="row"><span>${avatar(u.id,'sm')}</span><button class="linkbtn grow" data-act="profile" data-id="${u.id}"><b>${esc(u.name)}</b>${u.code?(u.codeUsed?` <span class="chip ok">Sudah masuk</span> <span class="chip codechip" role="button" tabindex="0" data-act="resetCode" data-id="${u.id}" title="Buat kode baru untuk masuk di perangkat lain">Kode baru</span>`:` <span class="chip codechip" role="button" tabindex="0" data-act="copyLogin" data-c="${esc(u.code)}" title="Ketuk untuk menyalin kode masuk">Kode ${esc(u.code)}</span>`):''}${u.id===c.leaderId?' <span class="chip ok">Ketua</span>':''}${n>1?` <span class="chip warn">${n} PB</span>`:''}${isActive(u)?'':' <span class="chip bad">Kedaluwarsa</span>'}<div class="small muted">${levelText(u)}, ELO ${u.elo}, aktif s.d. ${sdate(u.lastScan+30*DAY)}</div></button>${lead&&u.id!==c.leaderId?`${adm?`<button class="btn xs ghost" data-act="openModal" data-m="moveMember" data-id="${c.id}" data-uid="${u.id}">Pindah</button>`:''}<button class="btn xs danger" data-act="openModal" data-m="kickMember" data-id="${c.id}" data-uid="${u.id}">Keluarkan</button>`:''}</div>`}).join('')||'<p class="small muted">Belum ada anggota.</p>'}</div></section>
   <div class="actions cpact">${adm?`<button class="btn xs" data-act="openModal" data-m="payNotif" data-id="${c.id}" title="Kirim notifikasi pembayaran">Notif bayar</button>`:''}${lead?`<button class="btn xs ghost" data-act="openModal" data-m="clubEdit" data-id="${c.id}">Ubah profil</button>`:''}${adm&&c.status==='approved'?`<button class="btn xs ghost" data-act="openModal" data-m="changeLeader" data-id="${c.id}">Ganti ketua</button><button class="btn xs ghost" data-act="openModal" data-m="sanction" data-id="${c.id}">Sanksi</button><button class="btn xs ghost" data-act="openModal" data-m="mergeClub" data-id="${c.id}">Gabungkan</button>`:''}${adm&&['suspended','inactive','rejected'].includes(c.status)?`<button class="btn xs" data-act="reactivateClub" data-id="${c.id}">Aktifkan kembali</button>`:''}</div>`;
 }
 const mwhen=m=>m.when||m.t;
@@ -4413,7 +4459,9 @@ function render(preserve){applyBg();ESTC={};{const vk=[ui.tab,ui.view,ui.mTab,ui
   const keep=preserve?[...document.querySelectorAll('input[id]:not([type=file]),textarea[id],select[id]')].map(e=>[e.id,e.type==='checkbox'?e.checked:e.value]):[];
   const focus=preserve&&document.activeElement?document.activeElement.id:null;
   tick();saveUi();
-  const u=me(), admin=isAdmin(), app=document.getElementById('app');
+  ensureCodes();const u=me(), admin=isAdmin(), app=document.getElementById('app');
+  if(!S.adminClaimed){app.innerHTML=vSetup();return}
+  if(!LOGGED){app.innerHTML=vLogin();return}
   if(ui.view==='umpire'){app.innerHTML=vUmpire()+vModal()+vZoom();after(keep,focus);return}
   if(ui.view==='watch'&&ui.wfs){app.innerHTML=vWatchFull()+vModal()+vZoom();after(keep,focus);return}
   if(ui.view==='rtv'){app.innerHTML=vRankTV();return}
@@ -4877,6 +4925,31 @@ const A={
     if(!id||!user(id)){toast('Belum ada akun untuk peran ini. Isi data contoh dulu.');return}
     setMe(id);ui={...ui,tab:'menu',view:null,modal:null,clubSel:null,rankClub:null,galTab:'all'};commit('Sekarang masuk sebagai '+user(id).name+' ('+roleLabel(user(id))+').')},
   setTheme(d){try{localStorage.setItem(THEME_KEY,d.th)}catch(e){}applyTheme();render(true)},
+  loginCode(){const raw=((document.getElementById('lgCode')||{}).value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');const err=t=>{const e=document.getElementById('lgErr');if(e)e.textContent=t;toast(t)};
+    if(!raw)return err('Masukkan kode terlebih dahulu.');
+    const u=S.users.find(x=>x.code===raw&&!x.role&&!x.guest);
+    if(u){if(u.codeUsed)return err('Kode ini sudah dipakai. Minta kode baru ke ketua PB atau pengelola GOR.');
+      const pend=S.clubs.find(c=>c.leaderId===u.id&&c.status!=='approved');if(pend&&!S.clubs.some(c=>c.leaderId===u.id&&c.status==='approved'))return err('PB '+pend.name+' belum dikonfirmasi pengelola GOR. Kode baru bisa dipakai setelah disetujui.');
+      u.codeUsed=true;u.noAcc=false;setMe(u.id);ui={...ui,tab:'home',view:null,modal:null};return commit('Selamat datang, '+first(u.id)+'.')}
+    for(const c of S.clubs){const iv=(c.invites||[]).find(i=>i.code===raw);if(iv){const nu={id:'u'+rid(),name:iv.name,phone:iv.phone||'',level:'Intermediate',elo:LEVEL_ELO.Intermediate,played:0,wins:0,lastScan:Date.now(),hist:[],rated:false,fresh:true,code:raw};S.users.push(nu);c.members.push(nu.id);c.invites=c.invites.filter(x=>x!==iv);clubLog(c,nu.name+' bergabung dengan kode masuk.');notify(c.leaderId,nu.name+' bergabung ke '+c.name+'.',{tab:'club'});setMe(nu.id);ui={...ui,tab:'home',view:null,modal:null};return commit('Selamat datang, '+first(nu.id)+'. Kamu terdaftar di '+c.name+'.')}}
+    err('Kode tidak dikenali. Periksa lagi dengan ketua PB atau pengelola GOR.')},
+  setupAdmin(){const g=id=>((document.getElementById(id)||{}).value||'').trim(),nm=g('lgAN').slice(0,40),hp=g('lgAH').replace(/[\s-]/g,'');
+    if(!nm)return toast('Isi nama pengelola.');if(hp&&!validHp(hp))return toast('Nomor HP tidak valid. Contoh: 081234567890.');
+    const a=user('ade');if(!a)return toast('Akun pengelola tidak ditemukan.');a.name=nm;a.phone=hp?normHp(hp):'';S.adminClaimed=true;setMe('ade');ui={...ui,tab:'home',view:null,modal:null};commit('Selamat datang, '+nm+'. Kamu sekarang pengelola (Super User).')},
+  fillCode(d){const e=document.getElementById('lgCode');if(e){e.value=d.c;e.focus()}},
+  resetCode(d){const u=user(d.id);if(!u||!(isAdmin()||S.clubs.some(c=>c.leaderId===ME&&c.members.includes(u.id))))return;u.code=newLoginCode();u.codeUsed=false;commit('Kode baru untuk '+u.name+': '+u.code)},
+  lgReg(){ui.lgReg='form';render()},
+  lgRegBack(){ui.lgReg=null;render()},
+  lgRegister(){const g=id=>((document.getElementById(id)||{}).value||'').trim(),kn=g('lgKN').slice(0,40),hp=g('lgHp').replace(/[\s-]/g,''),pb=g('lgPB').slice(0,40),names=g('lgAng').split(/\n+/).map(x=>x.trim().slice(0,30)).filter(Boolean);
+    if(!kn)return toast('Isi nama ketua.');if(!pb)return toast('Isi nama PB.');if(!hp||!validHp(hp))return toast('Isi nomor HP yang valid. Contoh: 081234567890.');
+    if(S.clubs.some(c=>memberKey(c.name)===memberKey(pb)))return toast('Nama PB itu sudah terdaftar.');
+    const u={id:'u'+rid(),name:kn,phone:normHp(hp),level:'Intermediate',elo:LEVEL_ELO.Intermediate,played:0,wins:0,lastScan:Date.now(),hist:[],rated:false,fresh:true,noAcc:true,code:newLoginCode()};S.users.push(u);
+    const seen=new Set([kn.toLowerCase()]),invites=[];names.forEach(nm=>{if(!seen.has(nm.toLowerCase())){seen.add(nm.toLowerCase());invites.push({id:'i'+rid(),name:nm,phone:'',code:newLoginCode()})}});
+    S.clubs.push({id:'c'+rid(),invites,name:pb,day:2,time:'19:00',court:COURTS[0],receipt:'',status:'pending',code:null,leaderId:u.id,members:[u.id],requests:[],elo:CLUB_ELO_BASE,played:0,wins:0,createdAt:Date.now()});
+    (S.users.filter(x=>x.role==='superadmin')).forEach(a=>notify(a.id,'Pendaftaran PB baru: '+pb+' (ketua '+kn+'). Menunggu konfirmasi.',{tab:'komunitas'}));
+    ui.lgReg='done';ui.lgRegInfo={pb,kn};commit()},
+  copyLogin(d){try{navigator.clipboard.writeText(d.c);toast('Kode '+d.c+' disalin.')}catch(e){toast('Kode: '+d.c)}},
+  logout(){try{localStorage.removeItem(LOGIN_KEY);sessionStorage.removeItem(KEY+':me')}catch(e){}LOGGED=false;ME='ade';ui={...ui,tab:'home',view:null,modal:null};render()},
   cbdNav(d){const e=document.querySelector('.cbd2');if(e)e.scrollBy({left:(+d.d)*e.clientWidth*.86,behavior:'smooth'})},
   uSwapPos(d){const m=match(ui.matchId),c=m&&m.cur;if(!c||c.a+c.b!==0)return;const p=c.pos[d.side];if(p&&p.L!=null){[p.R,p.L]=[p.L,p.R];c.srv=c.pos[c.server][c[c.server]%2===0?'R':'L']||c.pos[c.server].R;commit()}},
   uFirst(d){const m=match(ui.matchId),c=m&&m.cur;if(!c||c.a+c.b!==0||m.games.length)return;c.server=d.side;c.srv=c.pos[d.side].R;commit()},
@@ -5106,7 +5179,7 @@ setInterval(()=>{if(ui.tab==='live'&&!ui.view&&!ui.modal&&isAdmin()&&!document.a
 setInterval(()=>{if(!ui.modal&&!['umpire','tv'].includes(ui.view)&&!document.activeElement?.matches('input,textarea,select'))render(true)},60000);
 (()=>{const m=location.hash.match(/^#tv=(.+)$/);if(m){const c=decodeURIComponent(m[1]);if(COURTS.includes(c)){ui.view='tv';ui.court=c}}})();
 /* kunjungan pertama: isi data contoh otomatis agar alur bisa langsung dicoba (sekali per perangkat) */
-try{if(!localStorage.getItem('ai-arena-demo-seeded')&&!S.users.some(u=>!u.role&&!u.guest)){dummyData();localStorage.setItem('ai-arena-demo-seeded','1');save()}}catch(e){console.error('data contoh gagal',e)}
+try{if(!localStorage.getItem('ai-arena-demo-seeded')&&!S.users.some(u=>!u.role&&!u.guest)){dummyData();localStorage.setItem('ai-arena-demo-seeded','1');save();const tt=document.getElementById('toast');if(tt){tt.classList.remove('show');clearTimeout(toast._t)}}}catch(e){console.error('data contoh gagal',e)}
 try{migrateTour()}catch(e){console.error('migrasi data gagal',e)}
 render();
 
