@@ -4608,10 +4608,10 @@ const A={
   saveClubEdit(d){const c=club(d.id);if(!c||!canLead(c))return;const M=ui.modal;if(isAdmin()){const n=val('ceName');if(!n)return toast('Isi nama PB.');c.name=n}c.desc=val('ceDesc');if(M.color)c.color=M.color;clubLog(c,'Profil PB diperbarui.');ui.modal=null;commit('Profil PB disimpan.')},
   saveCodeSet(d){const c=club(d.id);if(!c||!canLead(c))return;const days=+val('csExp');c.codeExp=days?Date.now()+days*DAY:0;c.maxMembers=Math.max(0,Math.round(+val('csMax')||0));clubLog(c,'Pengaturan kode diubah.');ui.modal=null;commit('Pengaturan kode disimpan.')},
   regenCode(d){const c=club(d.id);if(!c||!canLead(c))return;c.code=genCode(c);clubLog(c,'Kode PB dibuat ulang.');if(isAdmin())logAct(`Kode PB dibuat ulang: ${c.name}.`);ui.modal=null;commit('Kode baru: '+c.code)},
-  moveDo(d){const c=club(d.id),t=club(val('mvTo')),u=user(d.uid);if(!c||!t||!u||!isAdmin())return;c.members=c.members.filter(x=>x!==u.id);if(!t.members.includes(u.id))t.members.push(u.id);
+  moveDo(d){if(API_BASE&&!d.ok)return srvMember('move',d);const c=club(d.id),t=club(val('mvTo')),u=user(d.uid);if(!c||!t||!u||!isAdmin())return;c.members=c.members.filter(x=>x!==u.id);if(!t.members.includes(u.id))t.members.push(u.id);
     clubLog(c,`${u.name} pindah ke ${t.name}.`);clubLog(t,`${u.name} pindah dari ${c.name}.`);logAct(`${u.name} dipindah dari ${c.name} ke ${t.name}.`);notify(u.id,`Kamu dipindahkan dari ${c.name} ke ${t.name} oleh pengelola.`,{tab:'home'});ui.modal=null;commit(u.name+' dipindah ke '+t.name+'.')},
-  kickDo(d){const c=club(d.id),u=user(d.uid);if(!c||!u||!canLead(c)||u.id===c.leaderId)return;const why=val('kkWhy');c.members=c.members.filter(x=>x!==u.id);clubLog(c,`${u.name} dikeluarkan${why?': '+why:''}.`);if(isAdmin())logAct(`${u.name} dikeluarkan dari ${c.name}.`);notify(u.id,`Kamu dikeluarkan dari ${c.name}${why?': '+why:''}.`,{tab:'home'});ui.modal=null;commit(u.name+' dikeluarkan.')},
-  leaderDo(d){const c=club(d.id),nid=val('clNew');if(!c||!isAdmin()||!nid)return;if(!document.getElementById('clOk')?.checked)return toast('Centang persetujuan ketua lama dan baru.');const old=c.leaderId;c.leaderId=nid;
+  kickDo(d){if(API_BASE&&!d.ok)return srvMember('kick',d);const c=club(d.id),u=user(d.uid);if(!c||!u||!canLead(c)||u.id===c.leaderId)return;const why=val('kkWhy');c.members=c.members.filter(x=>x!==u.id);clubLog(c,`${u.name} dikeluarkan${why?': '+why:''}.`);if(isAdmin())logAct(`${u.name} dikeluarkan dari ${c.name}.`);notify(u.id,`Kamu dikeluarkan dari ${c.name}${why?': '+why:''}.`,{tab:'home'});ui.modal=null;commit(u.name+' dikeluarkan.')},
+  leaderDo(d){if(API_BASE&&!d.ok){if(!document.getElementById('clOk')?.checked)return toast('Centang persetujuan ketua lama dan baru.');return srvMember('leader',d)}const c=club(d.id),nid=val('clNew');if(!c||!isAdmin()||!nid)return;if(!document.getElementById('clOk')?.checked)return toast('Centang persetujuan ketua lama dan baru.');const old=c.leaderId;c.leaderId=nid;
     clubLog(c,`Ketua diganti dari ${user(old)?.name} ke ${user(nid).name}.`);logAct(`Ketua ${c.name}: ${user(old)?.name} -> ${user(nid).name}.`);notify([old,nid],`Ketua ${c.name} sekarang ${user(nid).name}.`,{tab:'club'});ui.modal=null;commit('Ketua diganti ke '+user(nid).name+'.')},
   sanctionDo(d){const c=club(d.id);if(!c||!isAdmin())return;const type=val('snType'),why=val('snWhy'),days=Math.max(1,Math.min(90,Math.round(+val('snDays')||7)));if(!why)return toast('Isi alasan sanksi.');
     const sx={t:Date.now(),type,text:why,by:ME};if(type==='skorsing'){c.status='suspended';c.until=Date.now()+days*DAY;sx.until=c.until}else if(type==='nonaktif'){c.status='inactive'}
@@ -5245,6 +5245,15 @@ async function srvSetup(){const g=id=>((document.getElementById(id)||{}).value||
 async function srvApply(){const g=id=>((document.getElementById(id)||{}).value||'').trim();
   try{await apiCall('POST','/api/clubs/apply',{leaderName:g('lgKN'),phone:g('lgHp'),clubName:g('lgPB'),memberNames:g('lgAng').split(/\n+/)},true);ui.lgReg='done';ui.lgRegInfo={pb:g('lgPB'),kn:g('lgKN')};render()}catch(e){toast(e.message)}}
 async function srvApprove(id,ok){try{const r=await apiCall('POST','/api/clubs/'+id+'/'+(ok?'approve':'reject'),{});await pullIdentity();ui.modal=null;commit(ok?'PB disetujui. Kode PB: '+r.clubCode:'PB ditolak.')}catch(e){toast(e.message)}}
+async function srvMember(kind,d){try{
+  if(kind==='kick')await apiCall('POST','/api/clubs/'+d.id+'/members/'+d.uid+'/kick',{reason:val('kkWhy')});
+  else if(kind==='move')await apiCall('POST','/api/clubs/'+d.id+'/members/'+d.uid+'/move',{toClubId:val('mvTo')});
+  else await apiCall('POST','/api/clubs/'+d.id+'/leader',{userId:val('clNew')});
+  const fresh={...d,ok:1};fresh.uid=d.uid;const why=val('kkWhy'),to=val('mvTo'),nid=val('clNew');
+  await pullIdentity();
+  for(const [id,v] of [['kkWhy',why],['mvTo',to],['clNew',nid]])if(!document.getElementById(id)){const h=document.createElement('input');h.id=id;h.type='hidden';h.value=v;document.body.appendChild(h)}
+  /* keanggotaan sudah diperbarui server; sisanya (catatan, notifikasi) dicatat lokal */
+  A[kind+'Do'](fresh);document.querySelectorAll('input[type=hidden]#kkWhy,input[type=hidden]#mvTo,input[type=hidden]#clNew').forEach(e=>e.remove())}catch(e){toast(e.message)}}
 async function srvAddMember(d){const name=val('amN'),hp=val('amH');try{const r=await apiCall('POST','/api/clubs/'+d.id+'/members',{name,phone:hp});await pullIdentity();ui.modal=null;commit(name+' ditambahkan. Kode masuk: '+r.code+' (bagikan ke orangnya)')}catch(e){toast(e.message)}}
 async function srvResetCode(id){try{const r=await apiCall('POST','/api/users/'+id+'/reset-code',{});await pullIdentity();commit('Kode baru: '+r.code)}catch(e){toast(e.message)}}
 async function srvDelInvite(inviteId){try{await apiCall('DELETE','/api/invites/'+inviteId);await pullIdentity();commit('Calon anggota dihapus.')}catch(e){toast(e.message)}}

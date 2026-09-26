@@ -2,7 +2,7 @@
 
 Backend untuk aplikasi AI ARENA: **PostgreSQL** sebagai database, **API Node.js (Express)**, masuk dengan **kode sekali pakai**, sinkronisasi data berversi, dan **integrasi YouTube Live**.
 
-Status: fondasi sudah jadi dan diuji (16 tes lolos). Aplikasi web (`index.html`) sudah bisa tersambung ke server ini (lihat bagian *Menyambungkan aplikasi web*).
+Status: fondasi sudah jadi dan diuji (17 tes lolos). Aplikasi web (`index.html`) sudah bisa tersambung ke server ini (lihat bagian *Menyambungkan aplikasi web*).
 
 ## Menjalankan di komputer sendiri
 
@@ -55,7 +55,7 @@ Alur di mode server:
 5. Data aplikasi (laga, turnamen, obrolan, dan lain-lain) tersimpan di server sebagai dokumen berversi. Perubahan dari satu perangkat muncul di perangkat lain lewat SSE. Kode masuk dan daftar calon anggota tidak ikut dokumen; keduanya hanya dikirim ke Super User dan ketua PB terkait.
 
 Batasan saat ini:
-- Mengeluarkan atau memindahkan anggota, mengganti ketua, dan mengubah profil PB masih berjalan di sisi aplikasi saja dan belum ada di server. Tambah anggota, hapus calon anggota, kode baru, setujui atau tolak PB sudah lewat server.
+- Mengubah profil PB masih berjalan di sisi aplikasi saja dan belum ada di server. Tambah anggota, hapus calon anggota, kode baru, setujui atau tolak PB, keluarkan, pindahkan anggota, dan ganti ketua sudah lewat server.
 - Konflik penyimpanan (dua perangkat menyimpan bersamaan): server menang, dan perangkat yang kalah memuat ulang data terbaru.
 
 ## Yang ada
