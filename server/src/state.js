@@ -1,7 +1,7 @@
 import { query } from './db.js';
 
 /** Bagian dokumen yang hanya boleh diubah Super User. Perubahan dari akun lain diabaikan (nilai lama dipertahankan). */
-export const ADMIN_ONLY_KEYS = ['announcements', 'announcement', 'tvs', 'tvTicker', 'quota', 'quotaLog', 'auditLog', 'courtSched', 'adminCode', 'adminClaimed'];
+export const ADMIN_ONLY_KEYS = ['announcements', 'announcement', 'tvs', 'tvTicker', 'quota', 'quotaLog', 'auditLog', 'courtSched', 'adminCode', 'adminClaimed', 'tabOpen'];
 
 /**
  * Rapikan dokumen sebelum disimpan:
