@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: ai-arena-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-arena}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-arena_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-arena}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - arena_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-arena} -d ${POSTGRES_DB:-arena}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+volumes:
+  arena_pgdata:
