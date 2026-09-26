@@ -1,0 +1,55 @@
+# Menjalankan seluruh AI ARENA di komputer sendiri: database + server + situs web.
+#   Windows : klik dua kali start.bat   (atau: powershell -File start.ps1)
+#   Lainnya : cp .env.docker.example .env, isi rahasia, lalu: docker compose up -d --build
+# Buka http://localhost:8080
+name: ai-arena
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: arena
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Isi POSTGRES_PASSWORD di .env (jalankan start.bat agar dibuat otomatis)}
+      POSTGRES_DB: arena
+    volumes:
+      - arena_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U arena -d arena"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  api:
+    build: ./server
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgres://arena:${POSTGRES_PASSWORD}@db:5432/arena
+      JWT_SECRET: ${JWT_SECRET:?Isi JWT_SECRET di .env}
+      TOKEN_ENC_KEY: ${TOKEN_ENC_KEY:?Isi TOKEN_ENC_KEY di .env}
+      CORS_ORIGINS: http://localhost:8080
+      # Izinkan localhost dan IP jaringan lokal supaya bisa dicoba dari HP di Wi-Fi yang sama.
+      CORS_ALLOW_LAN: "1"
+      YOUTUBE_CLIENT_ID: ${YOUTUBE_CLIENT_ID:-}
+      YOUTUBE_CLIENT_SECRET: ${YOUTUBE_CLIENT_SECRET:-}
+      YOUTUBE_REDIRECT_URI: ${YOUTUBE_REDIRECT_URI:-http://localhost:3000/api/youtube/oauth/callback}
+    ports:
+      - "3000:3000"
+
+  web:
+    image: nginx:alpine
+    restart: unless-stopped
+    depends_on:
+      - api
+    volumes:
+      - ./index.html:/usr/share/nginx/html/index.html:ro
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8080:80"
+
+volumes:
+  arena_pgdata:
