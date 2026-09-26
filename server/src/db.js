@@ -3,6 +3,8 @@ import { config } from './config.js';
 
 export const pool = new pg.Pool({ connectionString: config.databaseUrl, max: 10 });
 
+pool.on('error', e => console.error('Koneksi basis data menganggur galat:', e.message));
+
 export const query = (text, params) => pool.query(text, params);
 
 /** Jalankan fungsi dalam satu transaksi. */
