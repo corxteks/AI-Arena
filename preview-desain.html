@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI ARENA — Pratinjau desain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+:root{--blue:#2F4EF0;--blue2:#4B8CF7;--teal:#5ECDBE;--slate:#4A5568;--soft:#E5E9F2;--bg:#F1F4FA;--ink:#111B3A;--mut:#7B86A1;--card:#fff;--red:#EF4C5B;--amber:#F5A524}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:var(--ink)}
+.top{display:flex;align-items:center;gap:28px;padding:26px 36px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:12px}
+.logo .mk{width:46px;height:46px;border-radius:14px;background:var(--blue);display:grid;place-items:center;color:#fff;font-size:26px}
+.logo b{font-size:34px;font-weight:800;letter-spacing:-.5px}
+.logo small{display:block;font-size:12px;color:var(--mut);font-weight:500}
+.tag{max-width:340px;font-size:15px;line-height:1.5;color:#33405f;border-left:1px solid #cfd6e6;padding-left:26px}
+.pal{margin-left:auto;text-align:center}
+.pal div{display:flex;gap:10px;margin-bottom:6px}
+.pal i{width:32px;height:32px;border-radius:50%;display:block}
+.pal small{font-size:13px;color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:34px 22px;padding:10px 36px 50px;max-width:1520px;margin:auto}
+.cell{text-align:center}
+.cell p{margin:12px 0 0;font-size:14px;color:#3b4763}
+.ph{width:224px;height:470px;margin:auto;border-radius:34px;border:6px solid #0d1230;background:#fff;overflow:hidden;position:relative;display:flex;flex-direction:column;text-align:left;font-size:11px;box-shadow:0 14px 30px rgba(20,30,80,.18)}
+.sb{display:flex;justify-content:space-between;padding:9px 16px 4px;font-size:10px;font-weight:700}
+.bd{padding:6px 14px;flex:1;display:flex;flex-direction:column;min-height:0}
+h4{margin:0;font-size:15px;font-weight:800;line-height:1.25}
+.mut{color:var(--mut)}
+.btn{display:block;text-align:center;background:var(--blue);color:#fff;border-radius:11px;padding:10px;font-weight:700;font-size:11.5px}
+.btn.o{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
+.inp{border:1px solid #DCE1EE;border-radius:10px;padding:9px 10px;display:flex;align-items:center;gap:8px;color:var(--mut);margin-top:9px;font-size:11px}
+.nav{display:flex;justify-content:space-around;padding:7px 4px 9px;border-top:1px solid #EDF0F7;color:var(--mut);font-size:9.5px;font-weight:600;background:#fff}
+.nav span{display:flex;flex-direction:column;align-items:center;gap:1px}
+.nav i{font-size:18px}
+.nav .on{color:var(--blue)}
+.card{background:#fff;border:1px solid #EDF0F7;border-radius:14px;padding:10px;box-shadow:0 4px 12px rgba(30,45,110,.06)}
+.chip{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
+.c1{background:#E7EDFF;color:var(--blue)}.c2{background:#DFF6F1;color:#1B8A78}.c3{background:#FFE9EB;color:#C7303E}.c4{background:#FFF1D6;color:#A86A00}
+.ic{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:17px;flex:none}
+.row{display:flex;align-items:center;gap:9px}
+.sp{justify-content:space-between}
+.li{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #EFF2F8}
+.li:last-child{border:0}
+.tab{display:flex;gap:14px;border-bottom:1px solid #EDF0F7;margin:8px 0;font-weight:700;font-size:11px;color:var(--mut)}
+.tab span{padding-bottom:6px}.tab .on{color:var(--blue);border-bottom:2px solid var(--blue)}
+.tog{width:34px;height:20px;border-radius:12px;background:var(--blue);position:relative}
+.tog:after{content:"";position:absolute;right:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff}
+.hero{background:linear-gradient(135deg,#2F4EF0,#4B8CF7);border-radius:16px;color:#fff;padding:14px;position:relative;overflow:hidden}
+.hero .pill{background:#fff;color:var(--blue);border-radius:20px;padding:5px 12px;font-weight:700;font-size:10.5px;display:inline-block;margin-top:9px}
+.hero i.bg{position:absolute;right:-6px;bottom:-14px;font-size:84px;opacity:.22}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="logo"><span class="mk"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="19" r="2.6"/><path d="M9.6 17.4 6 5l3 1.8L12 3l3 3.8L18 5l-3.6 12.4"/><path d="M8.2 11.5h7.6"/></svg></span><div><b>AI ARENA</b><small>Main · Bertanding · Berkomunitas</small></div></div>
+  <div class="tag">Aplikasi komunitas bulutangkis yang membantu GOR mengatur pertandingan, turnamen, dan member dengan mudah.</div>
+  <div class="pal"><div><i style="background:#2F4EF0"></i><i style="background:#4B8CF7"></i><i style="background:#5ECDBE"></i><i style="background:#4A5568"></i><i style="background:#E5E9F2"></i></div><small>Color Palette</small></div>
+</div>
+
+<div class="grid">
+
+<div class="cell"><div class="ph" style="background:linear-gradient(170deg,#2F4EF0,#1E36C4);color:#fff;align-items:center;justify-content:center;text-align:center">
+<div style="position:absolute;top:10px;left:16px;font-size:10px;font-weight:700">9:41</div>
+<span class="mk" style="width:78px;height:78px;border-radius:24px;background:#fff;color:var(--blue);display:grid;place-items:center;font-size:44px"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="19" r="2.6"/><path d="M9.6 17.4 6 5l3 1.8L12 3l3 3.8L18 5l-3.6 12.4"/><path d="M8.2 11.5h7.6"/></svg></span>
+<div style="font-size:26px;font-weight:800;margin-top:14px">AI ARENA</div>
+<div style="font-size:11px;opacity:.85;margin-top:8px;line-height:1.5">Main lebih seru,<br>komunitas lebih dekat</div>
+<div style="position:absolute;bottom:18px;width:60px;height:4px;border-radius:2px;background:rgba(255,255,255,.7)"></div>
+</div><p>1. Splash Screen</p></div>
+
+<div class="cell"><div class="ph"><div class="sb"><span>9:41</span><span></span></div>
+<div class="bd" style="align-items:center;text-align:center">
+<div style="width:150px;height:150px;border-radius:50%;background:#E7EDFF;display:grid;place-items:center;margin:8px 0 12px;position:relative"><i class="ti ti-trophy" style="font-size:64px;color:var(--blue)"></i><span class="ic" style="position:absolute;top:6px;right:0;background:#fff;color:var(--teal);box-shadow:0 4px 10px rgba(0,0,0,.1)"><i class="ti ti-calendar"></i></span><span class="ic" style="position:absolute;bottom:14px;left:-4px;background:#fff;color:var(--amber);box-shadow:0 4px 10px rgba(0,0,0,.1)"><i class="ti ti-users"></i></span></div>
+<h4>Atur Pertandingan<br>Tanpa Ribet</h4>
+<p class="mut" style="line-height:1.5;margin:8px 0">Jadwal 3 lapangan, pasangan seimbang, dan skor live dalam satu aplikasi.</p>
+<div class="row" style="gap:5px;margin:4px 0 12px"><i style="width:14px;height:5px;border-radius:3px;background:var(--blue)"></i><i style="width:5px;height:5px;border-radius:50%;background:#CBD3E6"></i><i style="width:5px;height:5px;border-radius:50%;background:#CBD3E6"></i></div>
+<div class="btn" style="width:100%">Lanjut</div><div style="color:var(--blue);font-weight:700;margin-top:10px">Lewati</div></div></div><p>2. Onboarding</p></div>
+
+<div class="cell"><div class="ph"><div class="sb"><span>9:41</span><span></span></div>
+<div class="bd" style="text-align:center"><span style="width:44px;height:44px;border-radius:14px;background:var(--blue);color:#fff;display:grid;place-items:center;font-size:26px;margin:12px auto 6px"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="19" r="2.6"/><path d="M9.6 17.4 6 5l3 1.8L12 3l3 3.8L18 5l-3.6 12.4"/><path d="M8.2 11.5h7.6"/></svg></span>
+<div style="font-size:18px;font-weight:800">AI ARENA</div><div class="mut" style="margin:6px 0 4px">Masuk untuk melanjutkan<br>ke akun kamu</div>
+<div class="inp"><i class="ti ti-phone"></i>Nomor HP</div><div class="inp"><i class="ti ti-lock"></i>Kode OTP<i class="ti ti-eye" style="margin-left:auto"></i></div>
+<div style="display:flex;justify-content:space-between;margin:10px 0"><span class="mut">Ingat saya</span><span style="color:var(--blue);font-weight:700">Kirim ulang OTP</span></div>
+<div class="btn">Masuk</div><div class="mut" style="margin:10px 0">atau</div>
+<div class="row" style="gap:8px"><div class="btn o" style="flex:1;color:var(--ink);border-color:#DCE1EE"><i class="ti ti-brand-google"></i> Google</div><div class="btn o" style="flex:1;color:var(--ink);border-color:#DCE1EE"><i class="ti ti-brand-whatsapp"></i> WhatsApp</div></div>
+<div class="mut" style="margin-top:auto;padding-bottom:6px">Belum punya akun? <b style="color:var(--blue)">Daftar</b></div></div></div><p>3. Login / Register</p></div>
+
+<div class="cell"><div class="ph"><div class="sb"><span>9:41</span><span></span></div>
+<div class="bd" style="gap:9px">
+<div class="row sp"><div><div style="font-size:14px;font-weight:800">Halo, Budi</div><div class="mut">Siap main hari ini?</div></div><span class="ic" style="background:#E7EDFF;color:var(--blue);width:30px;height:30px"><i class="ti ti-bell"></i></span></div>
+<div class="inp" style="margin:0"><i class="ti ti-search"></i>Cari pemain, turnamen, PB…</div>
+<div class="hero"><div style="font-weight:800;font-size:13px;line-height:1.3">Open 24 Pemain<br>Pendaftaran dibuka</div><span class="pill">Lihat turnamen</span><i class="ti ti-trophy bg"></i></div>
+<div class="row sp" style="text-align:center;font-size:9.5px;font-weight:600"><div><span class="ic" style="background:#E7EDFF;color:var(--blue);margin:auto"><i class="ti ti-swords"></i></span>Tanding</div><div><span class="ic" style="background:#DFF6F1;color:#1B8A78;margin:auto"><i class="ti ti-trophy"></i></span>Turnamen</div><div><span class="ic" style="background:#FFF1D6;color:#A86A00;margin:auto"><i class="ti ti-chart-bar"></i></span>Peringkat</div><div><span class="ic" style="background:#FFE9EB;color:#C7303E;margin:auto"><i class="ti ti-users"></i></span>PB</div></div>
+<div class="row sp"><b style="font-size:12px">Laga berikutnya</b><span style="color:var(--blue);font-weight:700">Lihat semua</span></div>
+<div class="row" style="gap:8px"><div class="card" style="flex:1"><span class="chip c3">Dipanggil</span><div style="font-weight:800;margin-top:6px">Lap 2 · 16.50</div><div class="mut">vs Eko / Fajar</div></div><div class="card" style="flex:1"><span class="chip c2">Sabtu</span><div style="font-weight:800;margin-top:6px">Lap 1 · 20.00</div><div class="mut">Mabar PB</div></div></div></div>
+<div class="nav"><span class="on"><i class="ti ti-home"></i>Beranda</span><span><i class="ti ti-swords"></i>Tanding</span><span><i class="ti ti-bell"></i>Notifikasi</span><span><i class="ti ti-user"></i>Profil</span></div></div><p>4. Home / Dashboard</p></div>
+
+<div class="cell"><div class="ph"><div class="sb"><span>9:41</span><span></span></div>
+<div class="bd" style="gap:8px"><div class="row sp"><i class="ti ti-arrow-left" style="font-size:16px"></i><span><i class="ti ti-heart" style="font-size:16px"></i> &nbsp;<i class="ti ti-share" style="font-size:16px"></i></span></div>
+<div style="height:96px;border-radius:14px;background:linear-gradient(135deg,#5B7BFF,#8FB2FF);display:grid;place-items:center;color:#fff;font-size:44px"><i class="ti ti-trophy"></i></div>
+<h4>Open 24 Pemain</h4>
+<div class="row" style="gap:10px;color:var(--mut)"><span><i class="ti ti-star" style="color:var(--amber)"></i> 4.8</span><span><i class="ti ti-users"></i> 24 peserta</span><span><i class="ti ti-calendar"></i> 3 hari</span></div>
+<span class="chip c1" style="align-self:flex-start">Setengah kompetisi</span>
+<p class="mut" style="line-height:1.5;margin:0">Ganda seimbang: level dicampur agar semua pasangan setara. Grup lalu knockout.</p>
+<b style="font-size:12px">Penyelenggara</b><div class="row"><span class="ic" style="background:#E7EDFF;color:var(--blue)"><i class="ti ti-building"></i></span><div><b>GOR AI Arena</b><div class="mut">Pengelola resmi</div></div></div>
+<div class="btn" style="margin-top:auto">Lihat jadwal</div></div></div><p>5. Detail Turnamen</p></div>
+
+<div class="cell"><div class="ph" style="background:#fff"><div class="sb" style="color:#fff;background:#0F1636"><span>9:41</span><span></span></div>
+<div style="background:#0F1636;color:#fff;padding:8px 14px 12px"><div class="row sp"><span class="chip c3">LIVE</span><span style="opacity:.7">Lapangan 1</span></div>
+<div class="row sp" style="margin-top:8px"><span style="font-weight:700">Budi / Citra</span><b style="font-size:30px;line-height:1">21</b></div><div class="row sp"><span style="font-weight:700">Eko / Fajar</span><b style="font-size:30px;line-height:1;opacity:.6">17</b></div></div>
+<div class="bd"><h4 style="font-size:13px">Semifinal · Gim 2</h4><div class="mut" style="margin-top:4px;line-height:1.5">34 menit berjalan. Wasit Indah Sari.</div>
+<div class="tab"><span class="on">Skor</span><span>Statistik</span><span>Diskusi</span></div>
+<div class="li"><span class="ic" style="background:#E7EDFF;color:var(--blue)"><i class="ti ti-check"></i></span><div style="flex:1"><b>Gim 1</b><div class="mut">Budi / Citra menang</div></div><b>21–15</b></div>
+<div class="li"><span class="ic" style="background:#FFE9EB;color:#C7303E"><i class="ti ti-player-play"></i></span><div style="flex:1"><b>Gim 2</b><div class="mut">Sedang berlangsung</div></div><b>21–17</b></div>
+<div class="li"><span class="ic" style="background:#F1F4FA;color:var(--mut)"><i class="ti ti-clock"></i></span><div style="flex:1"><b>Gim 3</b><div class="mut">Bila perlu</div></div></div>
+<div class="btn" style="margin-top:auto">Tonton siaran</div></div></div><p>6. Skor Live</p></div>
+
+<div class="cell"><div class="ph"><div class="sb"><span>9:41</span><span></span></div>
+<div class="bd" style="gap:7px"><div class="inp" style="margin:0"><i class="ti ti-search"></i>Cari pemain atau PB…</div>
+<div class="row sp"><b style="font-size:12px">Kategori</b><span style="color:var(--blue);font-weight:700">Lihat semua</span></div>
+<div class="row sp" style="text-align:center;font-size:9.5px;font-weight:600"><div><span class="ic" style="background:#E7EDFF;color:var(--blue);margin:auto"><i class="ti ti-user"></i></span>Tunggal</div><div><span class="ic" style="background:#DFF6F1;color:#1B8A78;margin:auto"><i class="ti ti-users"></i></span>Ganda</div><div><span class="ic" style="background:#FFF1D6;color:#A86A00;margin:auto"><i class="ti ti-heart"></i></span>Campuran</div><div><span class="ic" style="background:#FFE9EB;color:#C7303E;margin:auto"><i class="ti ti-medal"></i></span>Veteran</div></div>
+<b style="font-size:12px;margin-top:4px">Peringkat teratas</b>
+<div class="li"><b style="width:14px">1</b><span class="ic" style="background:#E7EDFF;color:var(--blue)">CL</span><div style="flex:1"><b>Citra Lestari</b><div class="mut">PB Rajawali · Level A</div></div><b>1.612</b></div>
+<div class="li"><b style="width:14px">2</b><span class="ic" style="background:#DFF6F1;color:#1B8A78">EP</span><div style="flex:1"><b>Eko Prasetyo</b><div class="mut">PB Garuda · Level A</div></div><b>1.588</b></div>
+<div class="li"><b style="width:14px">3</b><span class="ic" style="background:#FFF1D6;color:#A86A00">JS</span><div style="flex:1"><b>Joko Susilo</b><div class="mut">PB Kilat · Level B</div></div><b>1.471</b></div></div>
+<div class="nav"><span><i class="ti ti-home"></i>Beranda</span><span class="on"><i class="ti ti-search"></i>Cari</span><span><i class="ti ti-bell"></i>Notifikasi</span><span><i class="ti ti-user"></i>Profil</span></div></div><p>7. Search</p></div>
+
+<div class="cell"><div class="ph"><div class="sb"><span>9:41</span><span></span></div>
+<div class="bd" style="gap:8px"><div class="row" style="gap:10px"><i class="ti ti-arrow-left" style="font-size:16px"></i><b style="font-size:13px">Daftar Turnamen</b></div>
+<div class="card row"><span class="ic" style="background:#E7EDFF;color:var(--blue);border-radius:12px"><i class="ti ti-trophy"></i></span><div><b>Open 24 Pemain</b><div class="mut">Sabtu, 10 Okt · Ganda seimbang</div></div></div>
+<b style="font-size:12px;margin-top:2px">Pilih pembayaran</b>
+<div class="card row sp" style="border-color:var(--blue);background:#F5F8FF"><span class="row"><i class="ti ti-qrcode" style="font-size:18px;color:var(--blue)"></i>QRIS</span><i class="ti ti-circle-check" style="color:var(--blue);font-size:18px"></i></div>
+<div class="card row sp"><span class="row"><i class="ti ti-building-bank" style="font-size:18px"></i>Transfer bank</span><i class="ti ti-circle" style="color:#CBD3E6;font-size:18px"></i></div>
+<div class="card row sp"><span class="row"><i class="ti ti-cash" style="font-size:18px"></i>Tunai di GOR</span><i class="ti ti-circle" style="color:#CBD3E6;font-size:18px"></i></div>
+<div class="row sp" style="margin-top:auto"><span class="mut">Total pendaftaran</span><b style="font-size:15px">Rp 75.000</b></div>
+<div class="btn">Daftar sekarang</div></div></div><p>8. Form / Pendaftaran</p></div>
+
+<div class="cell"><div class="ph"><div class="sb"><span>9:41</span><span></span></div>
+<div class="bd"><b style="font-size:15px">Notifikasi</b>
+<div class="row" style="gap:6px;margin:8px 0"><span class="chip" style="background:var(--blue);color:#fff">Semua</span><span class="chip" style="background:#F1F4FA;color:var(--mut)">Laga</span><span class="chip" style="background:#F1F4FA;color:var(--mut)">Turnamen</span></div>
+<div class="li" style="align-items:flex-start"><span class="ic" style="background:#FFE9EB;color:#C7303E"><i class="ti ti-speakerphone"></i></span><div style="flex:1"><b>Kamu dipanggil</b><div class="mut">Segera ke Lapangan 2 untuk laga semifinal.</div></div><span class="mut">Baru</span></div>
+<div class="li" style="align-items:flex-start"><span class="ic" style="background:#E7EDFF;color:var(--blue)"><i class="ti ti-calendar-time"></i></span><div style="flex:1"><b>Jadwal berubah</b><div class="mut">Laga Lap 1 diundur ke 17.05.</div></div><span class="mut">5 mnt</span></div>
+<div class="li" style="align-items:flex-start"><span class="ic" style="background:#DFF6F1;color:#1B8A78"><i class="ti ti-trending-up"></i></span><div style="flex:1"><b>Peringkat naik</b><div class="mut">Kamu naik ke posisi 25.</div></div><span class="mut">1 j</span></div>
+<div class="li" style="align-items:flex-start"><span class="ic" style="background:#FFF1D6;color:#A86A00"><i class="ti ti-trophy"></i></span><div style="flex:1"><b>Pendaftaran dibuka</b><div class="mut">Open 24 Pemain butuh pasanganmu.</div></div><span class="mut">Kemarin</span></div></div>
+<div class="nav"><span><i class="ti ti-home"></i>Beranda</span><span><i class="ti ti-swords"></i>Tanding</span><span class="on"><i class="ti ti-bell"></i>Notifikasi</span><span><i class="ti ti-user"></i>Profil</span></div></div><p>9. Notifikasi</p></div>
+
+<div class="cell"><div class="ph"><div class="sb"><span>9:41</span><span></span></div>
+<div class="bd"><div class="row" style="gap:10px"><span class="ic" style="width:48px;height:48px;background:#E7EDFF;color:var(--blue);font-size:16px;font-weight:800">BR</span><div><b style="font-size:13px">Budi Rahman</b><div class="mut">PB Rajawali · Level B</div></div></div>
+<div class="row sp" style="text-align:center;margin:12px 0;font-weight:800;font-size:15px"><div>1.216<div class="mut" style="font-size:10px;font-weight:500">ELO</div></div><div>4<div class="mut" style="font-size:10px;font-weight:500">Menang</div></div><div>2<div class="mut" style="font-size:10px;font-weight:500">Turnamen</div></div></div>
+<div class="card" style="padding:2px 10px"><div class="li"><i class="ti ti-history"></i><span style="flex:1">Riwayat laga</span><i class="ti ti-chevron-right mut"></i></div><div class="li"><i class="ti ti-medal"></i><span style="flex:1">Piala saya</span><i class="ti ti-chevron-right mut"></i></div><div class="li"><i class="ti ti-users"></i><span style="flex:1">PB saya</span><i class="ti ti-chevron-right mut"></i></div></div>
+<div class="card" style="padding:2px 10px;margin-top:9px"><div class="li"><i class="ti ti-settings"></i><span style="flex:1">Pengaturan</span><i class="ti ti-chevron-right mut"></i></div><div class="li"><i class="ti ti-help-circle"></i><span style="flex:1">Bantuan</span><i class="ti ti-chevron-right mut"></i></div></div></div>
+<div class="nav"><span><i class="ti ti-home"></i>Beranda</span><span><i class="ti ti-swords"></i>Tanding</span><span><i class="ti ti-bell"></i>Notifikasi</span><span class="on"><i class="ti ti-user"></i>Profil</span></div></div><p>10. Profile</p></div>
+
+<div class="cell"><div class="ph"><div class="sb"><span>9:41</span><span></span></div>
+<div class="bd" style="align-items:center;text-align:center;gap:8px"><div class="row sp" style="width:100%"><i class="ti ti-arrow-left" style="font-size:16px"></i><b style="font-size:13px">Kartu Juara</b><i class="ti ti-share" style="font-size:16px"></i></div>
+<div style="border:2px solid #C8D3F5;border-radius:16px;padding:16px 12px;background:linear-gradient(180deg,#F7F9FF,#EEF2FF);width:100%">
+<span class="mk" style="width:32px;height:32px;border-radius:10px;background:var(--blue);color:#fff;display:inline-grid;place-items:center;font-size:18px"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="19" r="2.6"/><path d="M9.6 17.4 6 5l3 1.8L12 3l3 3.8L18 5l-3.6 12.4"/><path d="M8.2 11.5h7.6"/></svg></span>
+<div style="font-weight:800;margin-top:6px">Juara 1</div><div class="mut" style="margin:2px 0 8px">Open 24 Pemain</div>
+<div style="font-size:16px;font-weight:800;color:var(--blue)">Arga / Bella</div><div class="mut" style="margin:6px 0">Menang 2–0 di final<br>Sabtu, 12 Oktober 2026</div>
+<span class="ic" style="width:46px;height:46px;background:#FFF1D6;color:#A86A00;font-size:26px;margin:6px auto"><i class="ti ti-medal"></i></span></div>
+<div class="btn" style="width:100%;margin-top:auto">Unduh kartu</div><div class="btn o" style="width:100%">Bagikan</div></div></div><p>11. Kartu Juara</p></div>
+
+<div class="cell"><div class="ph"><div class="sb"><span>9:41</span><span></span></div>
+<div class="bd" style="gap:6px"><div class="row" style="gap:10px"><i class="ti ti-arrow-left" style="font-size:16px"></i><b style="font-size:13px">Pengaturan</b></div>
+<b class="mut" style="margin-top:6px">Akun</b><div class="card" style="padding:0 10px"><div class="li"><i class="ti ti-user"></i><span style="flex:1">Informasi profil</span><i class="ti ti-chevron-right mut"></i></div><div class="li"><i class="ti ti-bell"></i><span style="flex:1">Notifikasi</span><i class="ti ti-chevron-right mut"></i></div></div>
+<b class="mut" style="margin-top:6px">Tampilan</b><div class="card" style="padding:0 10px"><div class="li"><i class="ti ti-moon"></i><span style="flex:1">Mode gelap</span><span class="tog"></span></div><div class="li"><i class="ti ti-language"></i><span style="flex:1">Bahasa</span><span class="mut">Indonesia</span></div></div>
+<b class="mut" style="margin-top:6px">Bantuan</b><div class="card" style="padding:0 10px"><div class="li"><i class="ti ti-help-circle"></i><span style="flex:1">Pusat bantuan</span><i class="ti ti-chevron-right mut"></i></div><div class="li"><i class="ti ti-shield"></i><span style="flex:1">Kebijakan privasi</span><i class="ti ti-chevron-right mut"></i></div></div></div></div><p>12. Setting</p></div>
+
+</div>
+</body>
+</html>
