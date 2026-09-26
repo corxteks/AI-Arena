@@ -2416,6 +2416,16 @@ body .tsw button{height:26px;min-height:26px;padding:0 9px;font-size:11.5px;font
 .loginp .lg-box textarea.lg-t{height:auto;padding:8px 10px}
 .loginp .lg-reg h2{font-size:17px;margin:0 0 4px}
 .srvmode .lg-demo{display:none!important}
+/* Beranda sederhana */
+body .cta{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;border-radius:14px;padding:16px 14px;margin:0 0 12px;background:var(--brand,#1D6A50);color:#fff;font:inherit;cursor:pointer}
+body .cta b{display:block;font-size:17px;font-weight:600}
+body .cta small{display:block;font-size:12px;opacity:.9;font-weight:400}
+body .cta .cte{font-size:26px;line-height:1}
+body .hmore{margin:12px 0}
+body .hmore>summary{cursor:pointer;list-style:none;padding:12px 14px;border-radius:12px;font-weight:600;text-align:center;background:var(--glass,rgba(255,255,255,.55));border:1px solid rgba(0,0,0,.08)}
+body .hmore>summary::-webkit-details-marker{display:none}
+body .hmore[open]>summary{margin-bottom:8px}
+:root[data-theme="dark"] body .hmore>summary{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14)}
 </style>
 </head>
 <body>
@@ -2927,17 +2937,18 @@ function vHome(){
   const wk=(()=>{const cut=Date.now()-7*DAY,base=[...(u.hist||[])].reverse().find(x=>x.t<=cut),d=base?u.elo-base.e:0,last5=S.matches.filter(m=>m.status==='verified'&&players(m).includes(ME)&&!m.friendly).sort((a,b)=>(b.verifiedAt||b.t)-(a.verifiedAt||a.t)).slice(0,5).map(m=>mSide(m)===(m.teamA.includes(ME)?'a':'b')),sent=S.challenges.filter(c=>c.from===ME&&['pending','open'].includes(c.status)).length;return{d,last5,sent}})();
   const tl=(S.tourneys||[]).filter(t=>['reg','ongoing'].includes(t.status)&&(t.access!=='intern'||!t.clubId||cs.some(c=>c.id===t.clubId))).slice(0,2),champ=(S.tourneys||[]).filter(t=>t.status==='done'&&t.champion).sort((a,b)=>b.when-a.when)[0];
   const ranked=S.users.filter(x=>!x.role&&!x.guest&&x.played>0).sort((a,b)=>b.elo-a.elo), pos=ranked.findIndex(x=>x.id===ME)+1;
-  return `<section class="hero2"><div class="h2t"><span>Rating ELO${isProv(u)?' (provisional)':''}</span><span>${pos?'Peringkat #'+pos:''}</span></div><h2 class="big">${u.elo}</h2>${spark(u.hist)}
+  const lc=leaderClubs()[0],cta=lc?`<button class="cta" data-act="openModal" data-m="addMember" data-id="${lc.id}"><span class="cte">➕</span><span><b>Tambah anggota</b><small>Kode masuk dibuat otomatis</small></span></button>`:`<button class="cta" data-act="goMatch" data-t="tantangan"><span class="cte">🏸</span><span><b>Cari lawan main</b><small>Tantang pasangan yang selevel denganmu</small></span></button>`;
+  return `${cta}<section class="hero2"><div class="h2t"><span>Rating ELO${isProv(u)?' (provisional)':''}</span><span>${pos?'Peringkat #'+pos:''}</span></div><h2 class="big">${u.elo}</h2>${spark(u.hist)}
     <div class="h3"><div><b>${pos?'#'+pos:'—'}</b><small>peringkat GOR</small></div><div><b>${u.wins}–${u.played-u.wins}</b><small>menang–kalah</small></div><div><b>${streakOf(ME)}</b><small>rentetan</small></div></div></section>
   <p class="small checkin ${soon?'warn':''}">${soon?'Check-in segera berakhir. ':''}Akun aktif sampai ${fdate(until)}.</p>
   ${vMyNext(true)}${vCourtStrip()}
   <div class="hm-wk"><div><small>ELO 7 hari</small><b class="${wk.d>0?'up':wk.d<0?'dn':''}">${wk.d>0?'+':''}${wk.d}</b></div><div><small>Rekor 5 laga</small><span class="hm-res">${wk.last5.length?wk.last5.map(w=>`<i class="${w?'w':'l'}">${w?'M':'K'}</i>`).join(''):'<em>belum ada</em>'}</span></div>${wk.sent?`<div><small>Tantangan menunggu</small><b>${wk.sent}</b></div>`:''}</div>
   ${(()=>{const inc=S.challenges.filter(c=>c.status==='pending'&&c.to.includes(ME)).length,rows=[inc?`Kamu ditantang (${inc}). Jawab di menu Tanding, tab Tantangan.`:'',toVerify.length?`Ada ${toVerify.length} skor yang menunggu verifikasimu di menu Tanding.`:''].filter(Boolean);return rows.length?`<section class="sec"><h2>Perlu perhatianmu</h2><div class="panel">${rows.map(r=>`<p class="small" style="margin:4px 0">${esc(r)}</p>`).join('')}</div></section>`:''})()}
   ${lives.length?`<section class="sec"><h2>Sedang live di GOR</h2><div class="panel">${lives.map(m=>`<div class="hm-live"><b>${esc(names(m.teamA))} vs ${esc(names(m.teamB))}</b><span>${esc(m.court)}${m.cur?' · '+m.cur.a+'–'+m.cur.b:''}${mPlayMs(m)?' · '+fmtDur(mPlayMs(m)):''}</span></div>`).join('')}</div></section>`:''}
-  ${tl.length||champ?`<section class="sec"><h2>Turnamen</h2>${tl.map(t=>{const tm=S.matches.filter(m=>m.tourneyId===t.id&&m.status!=='cancelled'),dn=tm.filter(m=>['verified','wo'].includes(m.status)).length,mine=t.pairs.some(p=>p.a===ME||p.b===ME)||(t.pool||[]).includes(ME),pbN=t.pairs.filter(p=>[p.a,p.b].some(id=>cs.some(c=>c.members.includes(id)))).length;return `<div class="hm-t"><span><b>${esc(t.name)}</b><small>${t.status==='reg'?'Pendaftaran dibuka':'Berlangsung'}${tm.length?' · '+dn+'/'+tm.length+' laga':''}${mine?' · <em>Kamu ikut</em>':pbN?' · PB-mu '+pbN+' pasangan':''}</small></span></div>`}).join('')}${champ?`<div class="hm-t champ"><span><b>Juara: ${esc(pairName(champ,champ.champion))}</b><small>${esc(champ.name)}</small></span></div>`:''}</section>`:''}
+  <details class="hmore"><summary>Lihat lainnya</summary>${tl.length||champ?`<section class="sec"><h2>Turnamen</h2>${tl.map(t=>{const tm=S.matches.filter(m=>m.tourneyId===t.id&&m.status!=='cancelled'),dn=tm.filter(m=>['verified','wo'].includes(m.status)).length,mine=t.pairs.some(p=>p.a===ME||p.b===ME)||(t.pool||[]).includes(ME),pbN=t.pairs.filter(p=>[p.a,p.b].some(id=>cs.some(c=>c.members.includes(id)))).length;return `<div class="hm-t"><span><b>${esc(t.name)}</b><small>${t.status==='reg'?'Pendaftaran dibuka':'Berlangsung'}${tm.length?' · '+dn+'/'+tm.length+' laga':''}${mine?' · <em>Kamu ikut</em>':pbN?' · PB-mu '+pbN+' pasangan':''}</small></span></div>`}).join('')}${champ?`<div class="hm-t champ"><span><b>Juara: ${esc(pairName(champ,champ.champion))}</b><small>${esc(champ.name)}</small></span></div>`:''}</section>`:''}
   ${next?`<section class="sec"><h2>Mabar berikutnya</h2><div class="panel"><h3>${esc(club(next.clubId).name)}</h3><p>${fdate(next.start)}, ${ftime(next.start)} (${next.dur} menit)</p><p class="small muted">Match Chat ${roomState(next)==='aktif'?'sudah dibuka':'dibuka 1 jam sebelum mabar'}.</p></div></section>`:''}
   ${(()=>{const ps=visiblePhotos().sort((a,b)=>b.t-a.t);if(!ps.length)return '';const wk=ps.filter(x=>Date.now()-x.t<7*DAY).sort((a,b)=>phEng(b)-phEng(a))[0],rest=ps.filter(x=>!wk||x.id!==wk.id).slice(0,wk?3:4),show=(wk?[wk]:[]).concat(rest);return `<section class="sec"><h2>Sorotan galeri</h2><div class="gal hgal">${show.map(x=>phTile(x,false).replace('<img',(wk&&x.id===wk.id?'<span class="hot">🔥 Terpopuler</span><img':'<img'))).join('')}</div></section>`})()}
-  <section class="sec"><h2>Pengumuman GOR</h2>${(()=>{const l=annSort(S.announcements.filter(a=>annVisible(a,cs)));return l.length?`<div class="panel">${l.map(a=>`<div class="row"><div class="grow"><p>${a.pin?'<span class="chip warn">Disematkan</span> ':''}${esc(a.text)}</p><span class="small muted">${fdate(a.t)}</span></div></div>`).join('')}</div>`:'<p class="muted">Belum ada pengumuman.</p>'})()}</section>`;
+  <section class="sec"><h2>Pengumuman GOR</h2>${(()=>{const l=annSort(S.announcements.filter(a=>annVisible(a,cs)));return l.length?`<div class="panel">${l.map(a=>`<div class="row"><div class="grow"><p>${a.pin?'<span class="chip warn">Disematkan</span> ':''}${esc(a.text)}</p><span class="small muted">${fdate(a.t)}</span></div></div>`).join('')}</div>`:'<p class="muted">Belum ada pengumuman.</p>'})()}</section></details>`;
 }
 const FMT={gugur:['Gugur','GG'],rr:['Setengah kompetisi','SK'],full:['Full kompetisi','FK']};
 const fmtN=f=>(FMT[f]||FMT.rr)[0],fmtC=f=>(FMT[f]||FMT.rr)[1];
@@ -3680,13 +3691,14 @@ function vMenu(){
   const cur=admin?'super':leaderClubs().length?'ketua':'anggota',RL=[['super','Super User'],['ketua','Ketua PB'],['anggota','Anggota']];
   const roleSw=`<section class="sec rolesw"><h2>Peran akun</h2><div class="tabs sm cseg" role="group" aria-label="Peran akun">${RL.map(r=>`<button aria-pressed="${cur===r[0]}" data-act="setRole" data-r="${r[0]}">${r[1]}</button>`).join('')}</div><p class="small muted">Masuk sebagai <b>${esc(u.name)}</b>, ${esc(roleLabel(u))}.</p></section>`;
   const tp=themePref(),themeSw=`<div class="tsw" role="group" aria-label="Tampilan">${[['light','Terang'],['dark','Gelap'],['auto','Otomatis']].map(x=>`<button aria-pressed="${tp===x[0]}" data-act="setTheme" data-th="${x[0]}">${x[1]}</button>`).join('')}</div>`;
+  const more=admin?'':`<div class="panel mlist">${it('live','Siaran langsung','Tonton laga yang sedang main','data-act="tab" data-t="live"','r')}${it('chat','Obrolan dan galeri','Ngobrol dan lihat foto','data-act="tab" data-t="chat"','p')}</div>`;
   if(!admin&&!leaderClubs().length){const pid=ui.profileId;ui.profileId=ME;let pv='';try{pv=vProfile()}catch(e){pv=''}ui.profileId=pid;
     return `<section class="ptitle tsrow"><h1>Profil</h1>${themeSw}</section>
-  ${roleSw}<div class="prof-embed">${pv}</div>`}
+  ${roleSw}${more}<div class="prof-embed">${pv}</div>`}
   return `<section class="ptitle tsrow"><h1>Menu</h1>${themeSw}</section>
   ${roleSw}
   <div class="prof"><label class="av avsq" title="Ketuk untuk mengunggah foto" tabindex="0">${u.photo?`<img src="${u.photo}" alt="Foto ${esc(u.name)}">`:esc(initials(u.name))}<span class="avcam" aria-hidden="true">${svg('gallery')}</span><input type="file" accept="image/*" data-change="avUp" aria-label="Unggah foto profil" hidden></label><div><b>${esc(u.name)}</b><small>${esc(roleLabel(u))}</small></div></div>
-  <div class="panel mlist">${rows.join('')}</div>`;
+  <div class="panel mlist">${rows.join('')}</div>${more}`;
 }
 const initials=n=>String(n||'?').split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
 function vAdminHome(){
@@ -4497,15 +4509,15 @@ function render(preserve){applyBg();ESTC={};{const vk=[ui.tab,ui.view,ui.mTab,ui
   else if(ui.view==='watch')main=vWatch();
   else if(ui.view==='room')main=vRoom();
   else main=({home:vHome,live:vMemberLive,menu:vMenu,match:vMatches,rank:vRank,chat:vChatList,galeri:vGallery,club:vClub,komunitas:vLeaderClubs}[ui.tab]||vHome)();
-  if(!ui.view&&['komunitas','club'].includes(ui.tab)&&nav)main=`<button class="btn sm ghost back" data-act="tab" data-t="menu">Kembali</button>`+main;
-  const tabs=[['home','Beranda','🏠'],['match','Tanding','🏸'],['live','Siaran','📹'],['rank','Peringkat','🏆'],['chat','Sosmed','👥'],['menu','Menu','🧭']];
-  const tabOn=t=>ui.tab===t||(t==='menu'&&['komunitas','club'].includes(ui.tab));
+  if(!ui.view&&(admin?['komunitas','club']:['komunitas','club','live','chat']).includes(ui.tab)&&nav)main=`<button class="btn sm ghost back" data-act="tab" data-t="menu">Kembali</button>`+main;
+  const tabs=admin?[['home','Beranda','🏠'],['match','Tanding','🏸'],['live','Siaran','📹'],['rank','Peringkat','🏆'],['chat','Sosmed','👥'],['menu','Menu','🧭']]:[['home','Beranda','🏠'],['match','Tanding','🏸'],['rank','Peringkat','🏆'],['menu','Menu','🧭']];
+  const tabOn=t=>ui.tab===t||(t==='menu'&&(admin?['komunitas','club']:['komunitas','club','live','chat']).includes(ui.tab));
   const mine=S.notifs.filter(n=>n.to===ME), unread=mine.filter(n=>!n.read).length, cu=totalUnread();
   app.innerHTML=`<header class="top"><div class="in"><div class="brand"><span class="logo2"><img src="${LOGO_SRC}" alt="AI Arena"></span><div class="bt"><b class="wm">AI ARENA</b><span>Halo, ${esc(first(ME))} · ${fdate(Date.now())}</span></div></div>
     <button class="bell" data-act="openNotif" aria-label="Notifikasi, ${unread} belum dibaca">${svg('bell')}${unread?`<i>${unread>9?'9+':unread}</i>`:''}</button>
 </div></header>
   <main class="shell">${main}</main>
-  ${nav?`<nav class="nav" aria-label="Menu utama"><div class="in" style="--n:${tabs.length}">${tabs.map(t=>`<button data-act="tab" data-t="${t[0]}" ${tabOn(t[0])&&!ui.view?'aria-current="page"':''}><span class="ne">${t[2]}</span>${t[1]}${t[0]==='chat'&&cu?`<i class="nb">${cu>9?'9+':cu}</i>`:''}</button>`).join('')}</div></nav>`:''}
+  ${nav?`<nav class="nav" aria-label="Menu utama"><div class="in" style="--n:${tabs.length}">${tabs.map(t=>`<button data-act="tab" data-t="${t[0]}" ${tabOn(t[0])&&!ui.view?'aria-current="page"':''}><span class="ne">${t[2]}</span>${t[1]}${(admin?t[0]==='chat':t[0]==='menu')&&cu?`<i class="nb">${cu>9?'9+':cu}</i>`:''}</button>`).join('')}</div></nav>`:''}
   ${vModal()}${vZoom()}`;
   after(keep,focus);
   // simulated push banner
