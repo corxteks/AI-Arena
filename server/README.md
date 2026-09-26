@@ -2,7 +2,7 @@
 
 Backend untuk aplikasi AI ARENA: **PostgreSQL** sebagai database, **API Node.js (Express)**, masuk dengan **kode sekali pakai**, sinkronisasi data berversi, dan **integrasi YouTube Live**.
 
-Status: fondasi sudah jadi dan diuji (16 tes lolos). Aplikasi web (`index.html`) belum tersambung ke server ini; sambungannya adalah tahap berikutnya.
+Status: fondasi sudah jadi dan diuji (16 tes lolos). Aplikasi web (`index.html`) sudah bisa tersambung ke server ini (lihat bagian *Menyambungkan aplikasi web*).
 
 ## Menjalankan di komputer sendiri
 
@@ -30,6 +30,33 @@ npm test                    # 16 tes (memakai basis data arena_test)
 ```
 
 Tanpa Docker, arahkan `DATABASE_URL` ke PostgreSQL yang sudah ada. Tabel dibuat otomatis oleh `db/schema.sql`.
+
+## Menyambungkan aplikasi web (mode server)
+
+Aplikasi `index.html` punya dua mode:
+
+- **Mode perangkat** (bawaan, seperti di GitHub Pages): semua data di browser, tanpa server.
+- **Mode server**: login dengan kode, setup pengelola, pendaftaran PB, dan seluruh data tersinkron ke database.
+
+Mode server aktif otomatis bila aplikasi dibuka dari `localhost` atau alamat jaringan lokal (mis. `http://192.168.1.15:8080`) dan server berjalan di port 3000. Alamat lain bisa diatur manual dengan parameter, dan pilihannya diingat browser:
+
+```
+http://localhost:8080/?api=http://localhost:3000     # aktifkan
+http://localhost:8080/?api=off                       # kembali ke mode perangkat
+```
+
+Coba dari HP di Wi-Fi yang sama: jalankan situs statis dan server di komputer (`python -m http.server 8080` di folder proyek, `npm start` di `server/`), lalu buka `http://<IP-komputer>:8080/` di HP. Pastikan `CORS_ALLOW_LAN=1` di `.env`, dan firewall Windows mengizinkan port 8080 dan 3000.
+
+Alur di mode server:
+1. Pertama kali dibuka: layar **setup pengelola** (sekali). Sesudahnya: layar **kode masuk**.
+2. Calon ketua memakai **Ajukan PB baru**; Super User menyetujui di Member; kode ketua dibagikan Super User.
+3. Ketua menambah anggota di halaman PB; kode anggota dibagikan ketua.
+4. Setiap kode hanya dipakai sekali; sesi berikutnya memakai token yang tersimpan di perangkat.
+5. Data aplikasi (laga, turnamen, obrolan, dan lain-lain) tersimpan di server sebagai dokumen berversi. Perubahan dari satu perangkat muncul di perangkat lain lewat SSE. Kode masuk dan daftar calon anggota tidak ikut dokumen; keduanya hanya dikirim ke Super User dan ketua PB terkait.
+
+Batasan saat ini:
+- Mengeluarkan atau memindahkan anggota, mengganti ketua, dan mengubah profil PB masih berjalan di sisi aplikasi saja dan belum ada di server. Tambah anggota, hapus calon anggota, kode baru, setujui atau tolak PB sudah lewat server.
+- Konflik penyimpanan (dua perangkat menyimpan bersamaan): server menang, dan perangkat yang kalah memuat ulang data terbaru.
 
 ## Yang ada
 

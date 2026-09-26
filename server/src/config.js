@@ -7,6 +7,7 @@ export const config = {
   corsOrigins: (env.CORS_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean),
   databaseUrl: env.DATABASE_URL || 'postgres://arena:arena_dev_password@localhost:5433/arena',
   jwtSecret: env.JWT_SECRET || '',
+  corsAllowLan: env.CORS_ALLOW_LAN === '1',
   authRateLimit: Number(env.AUTH_RATE_LIMIT || 30),
   jwtExpiresIn: env.JWT_EXPIRES_IN || '30d',
   tokenEncKey: env.TOKEN_ENC_KEY || '',

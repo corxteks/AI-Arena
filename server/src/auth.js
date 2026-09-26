@@ -187,3 +187,14 @@ export async function resetUserCode(user, targetId) {
     return { userId: targetId, code };
   });
 }
+
+/** Hapus calon anggota (ketua PB terkait atau Super User). */
+export async function deleteInvite(user, inviteId) {
+  return tx(async db => {
+    const i = (await db.query('SELECT * FROM invites WHERE id=$1 FOR UPDATE', [inviteId])).rows[0];
+    if (!i) throw new HttpError(404, 'Calon anggota tidak ditemukan.');
+    await assertCanManage(db, user, i.club_id);
+    await db.query('DELETE FROM invites WHERE id=$1', [inviteId]);
+    return { deleted: inviteId };
+  });
+}
