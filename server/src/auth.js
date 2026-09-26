@@ -110,8 +110,13 @@ export async function applyClub({ leaderName, phone, clubName, memberNames }) {
   const names = (Array.isArray(memberNames) ? memberNames : []).map(x => String(x).trim().slice(0, 30)).filter(Boolean)
     .filter(n => { const k = n.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 60);
   return tx(async db => {
-    const dup = await db.query('SELECT 1 FROM clubs WHERE name_key=$1', [nameKey(pb)]);
-    if (dup.rowCount) throw new HttpError(409, 'Nama PB itu sudah terdaftar.');
+    const dup = (await db.query('SELECT id,status,leader_id FROM clubs WHERE name_key=$1 FOR UPDATE', [nameKey(pb)])).rows[0];
+    if (dup && dup.status !== 'rejected') throw new HttpError(409, 'Nama PB itu sudah terdaftar.');
+    if (dup) {
+      // Pengajuan lama yang ditolak dibersihkan supaya nama bisa didaftarkan lagi.
+      await db.query('DELETE FROM clubs WHERE id=$1', [dup.id]);
+      await db.query(`DELETE FROM users u WHERE u.id=$1 AND u.code_used=false AND NOT EXISTS (SELECT 1 FROM clubs WHERE leader_id=u.id) AND NOT EXISTS (SELECT 1 FROM club_members WHERE user_id=u.id)`, [dup.leader_id]);
+    }
     const leader = (await db.query(
       `INSERT INTO users (id,name,phone,code) VALUES ($1,$2,$3,$4) RETURNING *`,
       [rid('u'), kn, normPhone(phone), await freshCode(db)])).rows[0];
