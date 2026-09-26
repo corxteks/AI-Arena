@@ -206,6 +206,47 @@ test('keluarkan, pindahkan, dan ganti ketua', async () => {
   assert.equal((await api('POST', `/api/clubs/${A.clubId}/members`, { name: 'Ditolak' }, A.leaderToken)).status, 403);
 });
 
+test('nama PB yang ditolak bisa didaftarkan lagi', async () => {
+  const adminToken = await setup();
+  const a = await api('POST', '/api/clubs/apply', { leaderName: 'Calon Satu', phone: '081200000010', clubName: 'PB Ulang' });
+  assert.equal(a.status, 201);
+  assert.equal((await api('POST', `/api/clubs/${a.body.clubId}/reject`, {}, adminToken)).status, 200);
+  const b = await api('POST', '/api/clubs/apply', { leaderName: 'Calon Dua', phone: '081200000011', clubName: 'PB Ulang' });
+  assert.equal(b.status, 201);
+  assert.equal((await api('POST', '/api/clubs/apply', { leaderName: 'Calon Tiga', phone: '081200000012', clubName: 'PB Ulang' })).status, 409);
+  const names = (await api('GET', '/api/clubs', undefined, adminToken)).body.clubs.map(c => c.name);
+  assert.deepEqual(names, ['PB Ulang']);
+});
+
+test('PUT /state: bagian Super User dan identitas dijaga server', async () => {
+  const adminToken = await setup();
+  const A = await makeClub(adminToken, 'PB Satu');
+  const get = async tok => (await api('GET', '/api/state', undefined, tok)).body;
+  let st = await get(adminToken);
+  // Super User boleh mengubah pengumuman
+  let r = await api('PUT', '/api/state', { doc: { announcements: [{ id: 1 }], matches: [] }, baseVersion: st.version }, adminToken);
+  assert.equal(r.status, 200);
+  assert.equal(r.body.ignored, undefined);
+  // Ketua tidak: pengumuman dikembalikan, laga tetap tersimpan, peran dan keanggotaan mengikuti server
+  const ids = (await api('GET', '/api/clubs', undefined, adminToken)).body.clubs[0];
+  const leader = ids.leaderId;
+  r = await api('PUT', '/api/state', { baseVersion: r.body.version, doc: {
+    announcements: [], matches: [{ id: 'm1' }],
+    users: [{ id: leader, name: 'Diubah', role: 'superadmin' }, { id: 'ghost', name: 'Hantu', role: 'superadmin' }],
+    clubs: [{ id: ids.id, name: 'Nama Palsu', status: 'pending', leaderId: 'ghost', members: [] }],
+  } }, A.leaderToken);
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.body.ignored, ['announcements']);
+  st = await get(adminToken);
+  assert.deepEqual(st.doc.announcements, [{ id: 1 }]);
+  assert.deepEqual(st.doc.matches, [{ id: 'm1' }]);
+  assert.equal(st.doc.users.find(u => u.id === leader).name, 'Ketua PB Satu');
+  assert.equal(st.doc.users.find(u => u.id === leader).role, undefined);
+  assert.equal(st.doc.users.find(u => u.id === 'ghost').role, undefined);
+  const c = st.doc.clubs[0];
+  assert.deepEqual([c.name, c.status, c.leaderId, c.members], ['PB Satu', 'approved', leader, [leader]]);
+});
+
 test('kode tidak dikenal dan kosong', async () => {
   assert.equal((await api('POST', '/api/auth/login', { code: 'ZZZZZZ' })).status, 404);
   assert.equal((await api('POST', '/api/auth/login', { code: '' })).status, 400);

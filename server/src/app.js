@@ -8,6 +8,7 @@ import { query } from './db.js';
 import * as auth from './auth.js';
 import * as yt from './youtube.js';
 import { HttpError, verifyToken } from './util.js';
+import { sanitizeDoc } from './state.js';
 
 const wrap = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
@@ -79,16 +80,17 @@ export function createApp() {
     const { doc, baseVersion } = req.body || {};
     if (!doc || typeof doc !== 'object' || Array.isArray(doc)) throw new HttpError(400, 'doc harus berupa objek.');
     if (!Number.isInteger(baseVersion)) throw new HttpError(400, 'baseVersion wajib berupa bilangan bulat.');
+    const clean = await sanitizeDoc(doc, req.user);
     const r = await query(
       `UPDATE app_state SET doc=$1, version=version+1, updated_at=now(), updated_by=$2 WHERE id=1 AND version=$3 RETURNING version`,
-      [JSON.stringify(doc), req.user.id, baseVersion]);
+      [JSON.stringify(clean.doc), req.user.id, baseVersion]);
     if (!r.rowCount) {
       const cur = (await query('SELECT version FROM app_state WHERE id=1')).rows[0];
       return res.status(409).json({ error: 'Data sudah diubah pihak lain. Muat ulang lalu coba lagi.', version: Number(cur.version) });
     }
     const version = Number(r.rows[0].version);
     broadcast({ type: 'state', version, by: req.user.id });
-    res.json({ version });
+    res.json({ version, ...(clean.ignored.length ? { ignored: clean.ignored } : {}) });
   }));
 
   // EventSource tidak bisa mengirim header, jadi token boleh lewat query khusus untuk endpoint ini.

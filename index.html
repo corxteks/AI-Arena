@@ -5204,7 +5204,7 @@ function docForServer(){const d=JSON.parse(JSON.stringify(S));(d.users||[]).forE
 function schedulePush(){if(!API_BASE||SRV.stage!=='app')return;clearTimeout(SRV.pushT);SRV.pushT=setTimeout(pushState,500)}
 async function pushState(){if(SRV.stage!=='app')return;if(SRV.busy){SRV.again=true;return}
   const d=docForServer(),js=JSON.stringify(d);if(js===SRV.lastJson)return;SRV.busy=true;
-  try{const r=await apiCall('PUT','/api/state',{doc:d,baseVersion:SRV.version});SRV.version=r.version;SRV.lastJson=js}
+  try{const r=await apiCall('PUT','/api/state',{doc:d,baseVersion:SRV.version});SRV.version=r.version;SRV.lastJson=js;if(r.ignored&&r.ignored.length)reloadRemote().catch(()=>{})}
   catch(e){if(e.status===409){await reloadRemote('Data diperbarui dari perangkat lain.').catch(()=>{})}else if(e.status===401){srvSignOut()}else console.warn('sinkron gagal:',e.message)}
   finally{SRV.busy=false;if(SRV.again){SRV.again=false;schedulePush()}}}
 async function pullIdentity(){

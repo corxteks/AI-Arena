@@ -55,6 +55,7 @@ Alur di mode server:
 5. Data aplikasi (laga, turnamen, obrolan, dan lain-lain) tersimpan di server sebagai dokumen berversi. Perubahan dari satu perangkat muncul di perangkat lain lewat SSE. Kode masuk dan daftar calon anggota tidak ikut dokumen; keduanya hanya dikirim ke Super User dan ketua PB terkait.
 
 Batasan saat ini:
+- `PUT /state`: bagian khusus Super User (pengumuman, TV, kuota, catatan tindakan, jadwal lapangan) diabaikan bila dikirim akun lain, dan identitas (peran, nama, ketua, status, anggota PB) selalu mengikuti database. Sisanya (laga, turnamen, liga, obrolan, galeri, pembayaran) masih terbuka untuk semua akun yang sudah masuk sampai dipecah ke tabel sendiri.
 - Mengubah profil PB masih berjalan di sisi aplikasi saja dan belum ada di server. Tambah anggota, hapus calon anggota, kode baru, setujui atau tolak PB, keluarkan, pindahkan anggota, dan ganti ketua sudah lewat server.
 - Konflik penyimpanan (dua perangkat menyimpan bersamaan): server menang, dan perangkat yang kalah memuat ulang data terbaru.
 
