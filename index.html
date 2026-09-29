@@ -4345,7 +4345,8 @@ function vModal(){
   }else if(M.type==='editSched'){
     const x=S.courtSched.find(e=>e.id===M.id);if(!x){ui.modal=null;return ''}
     h=`<h2>Ubah jadwal</h2><p class="small muted">Kalau hari atau jam diubah, periode ${SESI_SEBULAN} kali main dihitung ulang dari hari main terdekat.</p>
-    <div class="two"><div><label for="edName">Nama PB/Club</label><input id="edName" value="${esc(x.name)}"></div><div><label for="edKetua">Nama Ketua</label><input id="edKetua" value="${esc(x.ketua||'')}"></div></div>
+    ${S.clubs.some(c=>c.status==='approved'&&memberKey(c.name)===memberKey(x.name))?'':`<p class="small" style="color:var(--danger,#D33)">PB "${esc(x.name)}" belum terdaftar/nama tidak cocok persis, sehingga ketua PB tidak melihat jadwal ini di akunnya. Ketik persis nama PB terdaftar di bawah untuk menyambungkannya.</p>`}
+    <div class="two"><div><label for="edName">Nama PB/Club</label><input id="edName" list="pbList" value="${esc(x.name)}" autocomplete="off"></div><div><label for="edKetua">Nama Ketua</label><input id="edKetua" value="${esc(x.ketua||'')}"></div></div>${pbList()}
     <label for="edHp">Contact Person</label><input id="edHp" type="tel" inputmode="tel" placeholder="Contoh: 081234567890" value="${esc(x.hp||'')}">
     <div class="srow" style="margin-top:8px"><select id="edCourt" aria-label="Lapangan">${COURTS.map(c=>`<option ${c===x.court?'selected':''}>${c}</option>`).join('')}</select><select id="edDay" aria-label="Hari">${HARI.map((d,i)=>`<option value="${i}" ${i===x.day?'selected':''}>${d}</option>`).join('')}</select><input id="edTime" type="time" value="${esc(x.time)}" aria-label="Jam mulai"><span></span></div>
     <label for="edFee">Iuran (Rp)</label><input id="edFee" type="number" min="0" step="1000" value="${x.fee||''}">
@@ -4364,7 +4365,7 @@ function vModal(){
   }else if(M.type==='schedTetap'){
     if(!M.rows)M.rows=[{court:M.court||COURTS[0],day:M.day==null?1:M.day,time:'20:00'}];
     h=`<h2>Registrasi dan Jadwal</h2><p class="small muted">Satu PB bisa mengambil lebih dari satu jadwal. Tiap jadwal berlaku ${SESI_SEBULAN} kali main, mulai dari hari main terdekat.</p>
-    <div class="two"><div><label for="stName">Nama PB/Club</label><input id="stName" placeholder="Contoh: PB Rajawali" value="${esc(M.name||'')}"></div><div><label for="stKetua">Nama Ketua</label><input id="stKetua" placeholder="Contoh: Budi Rahman" value="${esc(M.ketua||'')}"></div></div>
+    <div class="two"><div><label for="stName">Nama PB/Club</label><input id="stName" list="pbList" placeholder="Contoh: PB Rajawali" value="${esc(M.name||'')}" autocomplete="off"><p class="small muted" style="margin:2px 0 0">Ketik persis nama PB yang sudah terdaftar, supaya jadwal ini muncul otomatis di akun ketuanya.</p></div>${pbList()}<div><label for="stKetua">Nama Ketua</label><input id="stKetua" placeholder="Contoh: Budi Rahman" value="${esc(M.ketua||'')}"></div></div>
     <label for="stHp">Contact Person</label><input id="stHp" type="tel" inputmode="tel" placeholder="Contoh: 081234567890" value="${esc(M.hp||'')}">
     <div class="small muted" style="margin:8px 0 2px">Jadwal (${M.rows.length})</div>
     ${M.rows.map((r,k)=>`<div class="srow"><select id="stCourt${k}" aria-label="Lapangan">${COURTS.map(x=>`<option ${x===r.court?'selected':''}>${x}</option>`).join('')}</select><select id="stDay${k}" aria-label="Hari">${HARI.map((d,i)=>`<option value="${i}" ${i===r.day?'selected':''}>${d}</option>`).join('')}</select><input id="stTime${k}" type="time" value="${esc(r.time)}" aria-label="Jam mulai">${M.rows.length>1?`<button class="btn xs ghost" data-act="delSchedRow" data-i="${k}" aria-label="Hapus baris jadwal">✕</button>`:'<span></span>'}</div>`).join('')}
@@ -5092,8 +5093,23 @@ const A={
     let made=[];
     cand.forEach(e=>{const sesi=sessionDates(e.day,e.time);Object.assign(e,{sesi,start:sesi[0],end:endOfDay(sesi[sesi.length-1])});S.courtSched.push(e);made.push(`${e.court} ${HARI[e.day]} ${e.time}`)});
     logAct(`Jadwal baru: ${name}, ${made.join('; ')}${fee?', '+rp(fee)+' per jadwal':''}.`);
+    // PB baru didaftarkan langsung oleh Super User: buat akun PB dan ketua otomatis, atau sambungkan/setujui yang sudah ada.
+    let existing=S.clubs.find(x=>memberKey(x.name)===memberKey(name)),madeAccount='';
+    if(!existing){
+      const leader={id:'u'+rid(),name:ketua,phone:hp?normHp(hp):'',level:'Intermediate',elo:LEVEL_ELO.Intermediate,played:0,wins:0,lastScan:Date.now(),hist:[],rated:false,fresh:true,noAcc:true,code:newLoginCode()};
+      S.users.push(leader);
+      existing={id:'c'+rid(),invites:[],name,day:cand[0].day,time:cand[0].time,court:cand[0].court,receipt:'',status:'approved',code:genCode({name}),leaderId:leader.id,members:[leader.id],requests:[],elo:CLUB_ELO_BASE,played:0,wins:0,createdAt:Date.now()};
+      S.clubs.push(existing);
+      clubLog(existing,'PB didaftarkan lewat Registrasi dan Jadwal oleh pengelola.');
+      madeAccount=` Akun PB dan ketua (kode masuk: ${leader.code}) dibuat otomatis.`;
+    }else if(existing.status!=='approved'&&existing.status!=='rejected'){
+      existing.code=existing.code||genCode(existing);existing.status='approved';existing.createdAt=existing.createdAt||Date.now();
+      clubLog(existing,'Disetujui otomatis lewat Registrasi dan Jadwal.');
+      madeAccount=' PB yang sebelumnya menunggu kini disetujui otomatis.';
+    }
     const nm0=[...new Set((M.members||[]).map(n=>n.trim()).filter(Boolean))],nAdd=nm0.length?addRoster(name,nm0):0;
-    ui.modal=null;commit((nAdd?`${nAdd} anggota dicatat. `:'')+(made.length>1?`${made.length} jadwal ${esc(name)} disimpan.`:`Jadwal tetap ${esc(name)} disimpan di ${made[0]}, berlaku ${SESI_SEBULAN}x main.`))},
+    const linked=existing.status==='approved'&&memberKey(existing.name)===memberKey(name);
+    ui.modal=null;commit((nAdd?`${nAdd} anggota dicatat. `:'')+(made.length>1?`${made.length} jadwal ${esc(name)} disimpan.`:`Jadwal tetap ${esc(name)} disimpan di ${made[0]}, berlaku ${SESI_SEBULAN}x main.`)+madeAccount+(linked?'':` PB "${esc(name)}" berstatus ${esc(existing.status)}, jadi ketua PB belum melihat jadwal ini di akunnya. Aktifkan PB-nya dulu di menu Member dan PB.`))},
   zoomPhoto(d){ui.zoom=d.id;render()},
   closeZoom(){ui.zoom=null;render()},
   openCourt(d){ui.courtPage=d.court;ui.view='court';ui.modal=null;render();window.scrollTo(0,0)},
@@ -5116,7 +5132,8 @@ const A={
     Object.assign(x,{name,ketua,hp,court,day,time,fee});
     if(resched){const sesi=sessionDates(day,time);Object.assign(x,{sesi,start:sesi[0],end:endOfDay(sesi[sesi.length-1])});delete x.paidPeriode;delete x.paidAt;delete x.notifKuota}
     logAct(`Jadwal diubah: ${before} -> ${name}, ${court}, ${HARI[day]} ${time}, ${fee?rp(fee):'tanpa iuran'}.`);
-    ui.modal=null;commit(`Jadwal ${esc(name)} diperbarui.`)},
+    const linked=S.clubs.some(c=>c.status==='approved'&&memberKey(c.name)===memberKey(name));
+    ui.modal=null;commit(`Jadwal ${esc(name)} diperbarui.`+(linked?'':` PB "${esc(name)}" belum terdaftar/nama tidak cocok persis, jadi ketua PB belum melihat jadwal ini di akunnya.`))},
   extendSched(d){if(!isAdmin())return;const x=S.courtSched.find(e=>e.id===d.id);if(!x)return;
     const cl=findClash(x,x.id);if(cl)return toast(clashMsg(cl,x));
     x.fee=Math.max(0,+val('exFee')||0);
