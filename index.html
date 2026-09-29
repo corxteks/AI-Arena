@@ -3971,6 +3971,8 @@ function confirmHtml(){const c=ui.confirm;if(!c)return '';return `<div class="sc
 function vModal(){
   const M=ui.modal; if(!M)return confirmHtml();
   if(M.type==='photo'){const p=S.gallery.find(x=>x.id===M.id);if(!p){ui.modal=null;return ''}return vLightbox(p)}
+  if(M.type==='pickRole'){const h=`<h2>Pilih akun ${M.r==='ketua'?'ketua PB':'anggota'}</h2><p class="small muted">Ada ${M.list.length} akun untuk peran ini.</p><div class="panel mlist">${M.list.map(x=>`<button class="mrow" data-act="pickRoleGo" data-id="${x.id}"><span class="grow"><b>${esc(x.label)}</b><small>${esc(x.sub)}</small></span>${svg('chev','mch')}</button>`).join('')}</div>`;
+    return `<div class="scrim" data-act="scrimClose"><div class="sheet sm" role="dialog" aria-modal="true">${h}<button class="btn ghost full" data-act="closeModal">Tutup</button></div></div>`}
   let h='';
   if(M.type==='scan'){
     const r=M.result;
@@ -4968,11 +4970,17 @@ const A={
       else{m.cur=newCur(m.teamA,m.teamB,s);toast('Gim '+m.games.length+' untuk '+names(s==='a'?m.teamA:m.teamB)+'. Istirahat 2 menit.')}}
     logSnap(m);commit()},
   uStart(){const m=match(ui.matchId),c=m&&m.cur;if(!c)return;c.go=true;if(!m.startedAt&&!m.games.length)m.startedAt=Date.now();commit(m.games.length?'Gim '+(m.games.length+1)+' dimulai.':'Pertandingan dimulai.')},
-  setRole(d){const ok=x=>x&&!x.role&&!x.guest;let id=null;
-    if(d.r==='super')id='ade';
-    else if(d.r==='ketua'){const c=S.clubs.find(c=>c.status==='approved'&&ok(user(c.leaderId)));id=c&&c.leaderId}
-    else{const lead=new Set(S.clubs.map(c=>c.leaderId));for(const c of S.clubs.filter(c=>c.status==='approved')){const m=c.members.find(x=>ok(user(x))&&!lead.has(x));if(m){id=m;break}}}
-    if(!id||!user(id)){toast('Belum ada akun untuk peran ini. Isi data contoh dulu.');return}
+  setRole(d){const ok=x=>x&&!x.role&&!x.guest;
+    const goId=id=>{setMe(id);ui={...ui,tab:'menu',view:null,modal:null,clubSel:null,rankClub:null,galTab:'all'};commit('Sekarang masuk sebagai '+user(id).name+' ('+roleLabel(user(id))+').')};
+    if(d.r==='super'){const a=S.users.find(x=>x.role==='superadmin');if(!a)return toast('Belum ada akun untuk peran ini. Isi data contoh dulu.');return goId(a.id)}
+    let list=[];
+    if(d.r==='ketua')list=S.clubs.filter(c=>c.status==='approved'&&ok(user(c.leaderId))).map(c=>({id:c.leaderId,label:user(c.leaderId).name,sub:c.name}));
+    else{const lead=new Set(S.clubs.map(c=>c.leaderId)),seen=new Set();
+      S.clubs.filter(c=>c.status==='approved').forEach(c=>c.members.filter(x=>ok(user(x))&&!lead.has(x)).forEach(x=>{if(seen.has(x))return;seen.add(x);list.push({id:x,label:user(x).name,sub:c.name})}))}
+    if(!list.length){toast('Belum ada akun untuk peran ini. Isi data contoh dulu.');return}
+    if(list.length===1)return goId(list[0].id);
+    ui.modal={type:'pickRole',r:d.r,list};render()},
+  pickRoleGo(d){const M=ui.modal;if(!M||M.type!=='pickRole')return;const id=d.id;if(!user(id))return;
     setMe(id);ui={...ui,tab:'menu',view:null,modal:null,clubSel:null,rankClub:null,galTab:'all'};commit('Sekarang masuk sebagai '+user(id).name+' ('+roleLabel(user(id))+').')},
   setTheme(d){try{localStorage.setItem(THEME_KEY,d.th)}catch(e){}applyTheme();render(true)},
   loginCode(){if(API_BASE)return srvLogin();const raw=((document.getElementById('lgCode')||{}).value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');const err=t=>{const e=document.getElementById('lgErr');if(e)e.textContent=t;toast(t)};
