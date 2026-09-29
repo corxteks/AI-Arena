@@ -3575,7 +3575,7 @@ function vClub(){
   if(!ui.clubSel||!cs.some(c=>c.id===ui.clubSel))ui.clubSel=cs[0]?.id;
   const c=club(ui.clubSel);
   const lead=isLeader(c);
-  if(lead)html+='<div class="panel"><div class="row"><div class="grow"><span class="small muted">Kode member</span><div class="big" style="font-size:34px">'+esc(c.code)+'</div></div><button class="btn sm ghost" data-act="copyCode" data-code="'+esc(c.code)+'">Salin</button></div></div>'+clubRoster(c);
+  if(lead)html+='<div class="panel"><div class="row"><div class="grow"><span class="small muted">Kode PB (untuk yang sudah punya akun di sini dan mau gabung PB ini)</span><div class="big" style="font-size:34px">'+esc(c.code)+'</div></div><button class="btn sm ghost" data-act="copyCode" data-code="'+esc(c.code)+'">Salin</button></div></div>'+clubRoster(c);
   if(lead&&c.requests.length)html+='<section class="sec"><h2>Permintaan bergabung</h2><div class="panel">'+c.requests.map(id=>{const u=user(id);return '<div class="row"><div class="grow"><b>'+esc(u.name)+'</b><div class="small muted">'+levelText(u)+', ELO '+u.elo+'</div></div><button class="btn sm" data-act="acceptReq" data-id="'+id+'">Terima</button><button class="btn sm danger" data-act="rejectReq" data-id="'+id+'">Tolak</button></div>'}).join('')+'</div></section>';
   if(lead)html+=reportsPanel(r=>roomClub(r.key)===c.id);
   return html;
@@ -3703,13 +3703,16 @@ function vMenu(){
   const roleSw=`<section class="sec rolesw"><h2>Peran akun</h2><div class="tabs sm cseg" role="group" aria-label="Peran akun">${RL.map(r=>`<button aria-pressed="${cur===r[0]}" data-act="setRole" data-r="${r[0]}">${r[1]}</button>`).join('')}</div><p class="small muted">Masuk sebagai <b>${esc(u.name)}</b>, ${esc(roleLabel(u))}.</p></section>`;
   const tp=themePref(),themeSw=`<div class="tsw" role="group" aria-label="Tampilan">${[['light','Terang'],['dark','Gelap'],['auto','Otomatis']].map(x=>`<button aria-pressed="${tp===x[0]}" data-act="setTheme" data-th="${x[0]}">${x[1]}</button>`).join('')}</div>`;
   const more=admin?'':`<div class="panel mlist">${it('live','Siaran langsung','Tonton laga yang sedang main','data-act="tab" data-t="live"','r')}${it('chat','Obrolan dan galeri','Ngobrol dan lihat foto','data-act="tab" data-t="chat"','p')}</div>`;
+  const dataMgr=admin&&!API_BASE?`<section class="sec"><h2>Data aplikasi (perangkat ini)</h2><p class="small muted" style="margin:0 0 8px">Belum tersambung ke server, jadi semua data (akun, laga, PB, dan lainnya) hanya tersimpan di perangkat ini sebagai satu berkas JSON. Peran tiap akun (Super User, ketua, anggota) ikut tersimpan otomatis, tanpa perlu diatur ulang.</p>
+    <div class="panel mlist">${it('gallery','Unduh cadangan (.json)','Simpan salinan seluruh data saat ini','data-act="exportData"','t')}${it('send','Pulihkan dari cadangan','Ganti data di perangkat ini dengan berkas JSON','data-act="importPick"','b')}${it('announce','Hapus semua data','Kembalikan ke data demo awal','data-act="reset"','r')}</div>
+    <input type="file" id="importFile" accept="application/json" style="display:none" data-change="importFile"></section>`:'';
   if(!admin&&!leaderClubs().length){const pid=ui.profileId;ui.profileId=ME;let pv='';try{pv=vProfile()}catch(e){pv=''}ui.profileId=pid;
     return `<section class="ptitle tsrow"><h1>Profil</h1>${themeSw}</section>
-  ${roleSw}${more}<div class="prof-embed">${pv}</div>`}
+  ${roleSw}${more}${dataMgr}<div class="prof-embed">${pv}</div>`}
   return `<section class="ptitle tsrow"><h1>Menu</h1>${themeSw}</section>
   ${roleSw}
   <div class="prof"><label class="av avsq" title="Ketuk untuk mengunggah foto" tabindex="0">${u.photo?`<img src="${u.photo}" alt="Foto ${esc(u.name)}">`:esc(initials(u.name))}<span class="avcam" aria-hidden="true">${svg('gallery')}</span><input type="file" accept="image/*" data-change="avUp" aria-label="Unggah foto profil" hidden></label><div><b>${esc(u.name)}</b><small>${esc(roleLabel(u))}</small></div></div>
-  <div class="panel mlist">${rows.join('')}</div>${more}`;
+  <div class="panel mlist">${rows.join('')}</div>${more}${dataMgr}`;
 }
 const initials=n=>String(n||'?').split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
 function vAdminHome(){
@@ -3762,7 +3765,7 @@ const addRoster=(pbName,names)=>{const key=memberKey(pbName),c=S.clubs.find(x=>m
 const inviteMatch=(c,u)=>(c.invites||[]).find(i=>(i.phone&&u.phone&&normHp(i.phone)===normHp(u.phone))||((!i.phone||!u.phone)&&i.name.trim().toLowerCase()===String(u.name||'').trim().toLowerCase()));
 function clubRoster(c){if(!canLead(c)||c.status!=='approved')return '';const inv=c.invites||[],full=c.maxMembers&&c.members.length>=c.maxMembers;
   return `<section class="sec psec"><h2>Anggota</h2><div class="panel"><div class="row"><div class="grow"><b>${c.members.length} anggota${c.maxMembers?' dari maks '+c.maxMembers:''}</b><div class="small muted">Tambahkan nama anggota, atau minta mereka bergabung dengan kode di atas.</div></div><button class="btn xs" data-act="openModal" data-m="addMember" data-id="${c.id}" ${full?'disabled':''}>Tambah anggota</button></div>
-  ${inv.length?`<div class="small muted dlab">Calon anggota (${inv.length}), otomatis diterima saat bergabung dengan kode</div>${inv.map(i=>`<div class="row"><div class="grow"><b>${esc(i.name)}</b>${i.code?` <span class="chip codechip" role="button" tabindex="0" data-act="copyLogin" data-c="${esc(i.code)}">Kode ${esc(i.code)}</span>`:''}${i.phone?`<div class="small muted">${esc(i.phone)}</div>`:''}</div><button class="btn xs danger" data-act="delInvite" data-id="${c.id}" data-i="${i.id}">Hapus</button></div>`).join('')}`:''}</div></section>`}
+  ${inv.length?`<div class="small muted dlab">Calon anggota (${inv.length}), belum pernah masuk aplikasi</div>${inv.map(i=>`<div class="row"><div class="grow"><b>${esc(i.name)}</b>${i.code?` <span class="chip codechip" role="button" tabindex="0" data-act="copyLogin" data-c="${esc(i.code)}">Kode masuk: ${esc(i.code)}</span>`:''}${i.phone?`<div class="small muted">${esc(i.phone)}</div>`:''}</div><button class="btn xs danger" data-act="delInvite" data-id="${c.id}" data-i="${i.id}">Hapus</button></div>`).join('')}<p class="small muted" style="margin:6px 0 0">Berikan "Kode masuk" ke orangnya untuk diketik di layar Masuk aplikasi (beda dengan "Kode PB" di atas, sekali pakai).</p>`:''}</div></section>`}
 function genCode(c){let code;do{code=c.name.replace(/^PB\s*/i,'').replace(/[^A-Za-z]/g,'').slice(0,3).toUpperCase().padEnd(3,'X')+'-'+(1000+Math.floor(Math.random()*9000))}while(S.clubs.some(x=>x.code===code&&x.id!==c.id));return code}
 function reviewClash(c){const conf=[];S.courtSched.filter(x=>x.kind==='tetap'&&x.court===c.court&&x.day===c.day&&x.end>=Date.now()).forEach(x=>conf.push(x.name+' ('+x.time+')'));S.clubs.filter(x=>x.id!==c.id&&x.status==='approved'&&x.court===c.court&&x.day===c.day).forEach(x=>{if(!conf.some(y=>y.startsWith(x.name)))conf.push(x.name+' ('+x.time+')')});return conf}
 function mList(){const q=(ui.mQ||'').trim().toLowerCase(),f=ui.mF||'all';
@@ -3823,6 +3826,7 @@ function vClubPage(id){
   const codeInfo=c.code?`${esc(c.code)}${c.codeExp?', berlaku s.d. '+sdate(c.codeExp):''}${c.maxMembers?', maks '+c.maxMembers+' anggota':''}`:'-';
   return `${back()}<div class="pcard cpc" style="--c:${clubColor(c)}"><div class="pph">${clubAv(c,'lg')}</div><div class="pinfo"><h1>${esc(c.name)}</h1><p class="small muted">${esc(c.desc||'Belum ada deskripsi PB.')}</p><div class="pchips">${cstChip(c)}${c.until?`<span class="chip warn">Sampai ${sdate(c.until)}</span>`:''}${c.createdAt?`<span class="chip">Sejak ${sdate(c.createdAt)}</span>`:''}</div></div></div>
   ${lead&&(c.requests||[]).length?`<section class="sec psec"><h2>Permintaan bergabung</h2><div class="panel">${c.requests.map(id=>user(id)?`<div class="row"><div class="grow"><b>${esc(user(id).name)}</b><div class="small muted">${levelText(user(id))}, ELO ${user(id).elo}</div></div><button class="btn xs" data-act="reqAct" data-c="${c.id}" data-id="${id}" data-ok="1">Terima</button><button class="btn xs danger" data-act="reqAct" data-c="${c.id}" data-id="${id}" data-ok="0">Tolak</button></div>`:'').join('')}</div></section>`:''}
+  ${lead&&c.code?`<div class="panel"><div class="row"><div class="grow"><span class="small muted">Kode PB (untuk yang sudah punya akun di sini dan mau gabung PB ini)</span><div class="big" style="font-size:28px">${esc(c.code)}</div></div><button class="btn sm ghost" data-act="copyCode" data-code="${esc(c.code)}">Salin</button></div></div>`:''}
   ${clubRoster(c)}
   <section class="sec psec"><h2>Anggota (${ms.length})</h2><div class="panel">${ms.map(u=>{const n=clubsOf(u.id).length;return `<div class="row"><span>${avatar(u.id,'sm')}</span><button class="linkbtn grow" data-act="profile" data-id="${u.id}"><b>${esc(u.name)}</b>${u.code?(u.codeUsed?` <span class="chip ok">Sudah masuk</span> <span class="chip codechip" role="button" tabindex="0" data-act="resetCode" data-id="${u.id}" title="Buat kode baru untuk masuk di perangkat lain">Kode baru</span>`:` <span class="chip codechip" role="button" tabindex="0" data-act="copyLogin" data-c="${esc(u.code)}" title="Ketuk untuk menyalin kode masuk">Kode ${esc(u.code)}</span>`):''}${u.id===c.leaderId?' <span class="chip ok">Ketua</span>':''}${n>1?` <span class="chip warn">${n} PB</span>`:''}${isActive(u)?'':' <span class="chip bad">Kedaluwarsa</span>'}<div class="small muted">${levelText(u)}, ELO ${u.elo}, aktif s.d. ${sdate(u.lastScan+30*DAY)}</div></button>${lead&&u.id!==c.leaderId?`${adm?`<button class="btn xs ghost" data-act="openModal" data-m="moveMember" data-id="${c.id}" data-uid="${u.id}">Pindah</button>`:''}<button class="btn xs danger" data-act="openModal" data-m="kickMember" data-id="${c.id}" data-uid="${u.id}">Keluarkan</button>`:''}</div>`}).join('')||'<p class="small muted">Belum ada anggota.</p>'}</div></section>
   <div class="actions cpact">${adm?`<button class="btn xs" data-act="openModal" data-m="payNotif" data-id="${c.id}" title="Kirim notifikasi pembayaran">Notif bayar</button>`:''}${lead?`<button class="btn xs ghost" data-act="openModal" data-m="clubEdit" data-id="${c.id}">Ubah profil</button>`:''}${adm&&c.status==='approved'?`<button class="btn xs ghost" data-act="openModal" data-m="changeLeader" data-id="${c.id}">Ganti ketua</button><button class="btn xs ghost" data-act="openModal" data-m="sanction" data-id="${c.id}">Sanksi</button><button class="btn xs ghost" data-act="openModal" data-m="mergeClub" data-id="${c.id}">Gabungkan</button>`:''}${adm&&['suspended','inactive','rejected'].includes(c.status)?`<button class="btn xs" data-act="reactivateClub" data-id="${c.id}">Aktifkan kembali</button>`:''}</div>`;
@@ -3948,6 +3952,10 @@ function vUmpire(){
 /* ---------- modal ---------- */
 function vZoom(){const u=ui.zoom&&user(ui.zoom);if(!u||!u.photo){ui.zoom=null;return ''}
   return `<div class="zoomv" data-act="closeZoom" role="dialog" aria-modal="true" aria-label="Foto ${esc(u.name)}"><figure><img src="${u.photo}" alt="Foto ${esc(u.name)}"><figcaption>${esc(u.name)}</figcaption><button class="btn sm ghost" data-act="closeZoom">Tutup</button></figure></div>`}
+function handleImportFile(inp){const f=inp.files&&inp.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{let obj;try{obj=JSON.parse(rd.result)}catch(e){toast('Berkas bukan JSON yang valid.');return}
+  if(!obj||typeof obj!=='object'||!Array.isArray(obj.users)){toast('Berkas ini bukan cadangan AI ARENA yang dikenali.');return}
+  ui.pendingImport=obj;ui.confirm={title:'Timpa semua data?',text:'Data di perangkat ini diganti seluruhnya dengan isi berkas ini.',yes:'Ya, timpa',no:'Batal',act:'importApply'};render()};
+  rd.readAsText(f);inp.value=''}
 function needConfirm(b){const a=b.dataset.act,d={...b.dataset};
   if(a==='closeModal'&&/^\s*Batal\s*$/.test(b.textContent))return{title:'Batalkan pengisian?',text:'Data yang sudah diisi akan hilang.',yes:'Ya, batalkan',no:'Lanjut mengisi',act:'closeModalForce'};
   const M={tourDel:['Batalkan turnamen?','Pendaftaran dan jadwal turnamen dibatalkan. Peserta diberi tahu.','Ya, batalkan turnamen'],cancelCh:['Batalkan tantangan?','Tantangan ini ditarik dan lawan diberi tahu.','Ya, batalkan'],tourLeave:['Batalkan pendaftaran?','Pasangan ini dikeluarkan dari turnamen dan slotnya dibuka lagi.','Ya, batalkan pendaftaran'],poolRm:['Keluarkan pemain?','Pemain dikeluarkan dari daftar peserta turnamen.','Ya, keluarkan'],pSep:['Pisahkan pasangan?','Kedua pemain kembali ke daftar belum berpasangan.','Ya, pisahkan'],
@@ -4583,7 +4591,10 @@ const A={
   askCancel(){ui.confirm={title:ui.modal&&ui.modal.type==='tourNew'?'Batalkan pembuatan turnamen?':'Batalkan pembuatan pertandingan?',text:'Data yang sudah diisi akan hilang.',yes:'Ya, batalkan',no:'Lanjut mengisi'};render(true)},
   confirmNo(){ui.confirm=null;render(true)},
   confirmYes(){const c=ui.confirm;ui.confirm=null;if(c&&c.act&&c.act!=='closeModalForce'){A[c.act](c.data||{});return}ui.modal=null;render()},
-  reset(){if(API_BASE)return toast('Reset dinonaktifkan saat terhubung ke server.');if(confirm('Kembalikan semua data demo ke kondisi awal?')){S=seed();ui={...ui,tab:'home',view:null,modal:null,nCount:0,nUser:null};commit('Data demo direset.')}},
+  exportData(){const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='ai-arena-cadangan-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);toast('Cadangan diunduh.')},
+  importPick(){if(API_BASE)return toast('Pemulihan dinonaktifkan saat terhubung ke server.');document.getElementById('importFile')?.click()},
+  importApply(){const obj=ui.pendingImport;ui.pendingImport=null;if(!obj)return;S=obj;ui={...ui,tab:'menu',view:null,modal:null,nCount:0,nUser:null};if(!S.users.some(u=>u.id===ME))ME=S.users.find(u=>u.role==='superadmin')?.id||S.users[0]?.id;commit('Data dipulihkan dari cadangan.')},
+  reset(){if(API_BASE)return toast('Reset dinonaktifkan saat terhubung ke server.');S=seed();ui={...ui,tab:'home',view:null,modal:null,nCount:0,nUser:null};commit('Data demo direset.')},
   doScan(d){
     const out=!!document.getElementById('scanOut')?.checked, tok=d.src==='tv'?tokenAt(curWin()):tokenAt(curWin()-12);
     const ok1=validToken(tok), lines=[[ok1,ok1?`Kode QR ${tok} valid`:`Kode QR ${tok} sudah kedaluwarsa. Kode ini dibuat 6 menit lalu, kemungkinan dari foto.`]];
@@ -5149,6 +5160,7 @@ document.addEventListener('keydown',e=>{
 });
 document.addEventListener('change',e=>{
   const k=e.target.dataset.change;
+  if(k==='importFile'){handleImportFile(e.target);return}
   if(k==='switchUser'){setMe(e.target.value);ui={...ui,tab:'home',view:null,modal:null,clubSel:null,rankClub:null,galTab:'all'};render()}
   if(k==='loungePB'){ui.loungePB=e.target.value}
   if(k==='nilaiPB'){A.nilaiPB(e.target.value)}
