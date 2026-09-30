@@ -1,7 +1,12 @@
 import pg from 'pg';
 import { config } from './config.js';
 
-export const pool = new pg.Pool({ connectionString: config.databaseUrl, max: 10 });
+export const pool = new pg.Pool({
+  connectionString: config.databaseUrl,
+  max: 10,
+  // Beberapa penyedia hosting (mis. koneksi publik Railway) mewajibkan SSL. Aktifkan dengan PGSSL=require di .env bila perlu.
+  ssl: process.env.PGSSL === 'require' ? { rejectUnauthorized: false } : undefined,
+});
 
 pool.on('error', e => console.error('Koneksi basis data menganggur galat:', e.message));
 
