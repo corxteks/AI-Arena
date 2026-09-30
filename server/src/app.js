@@ -103,7 +103,14 @@ export function createApp() {
     res.write(`data: ${JSON.stringify({ type: 'hello' })}\n\n`);
     clients.add(res);
     const ping = setInterval(() => res.write(': ping\n\n'), 25000);
-    req.on('close', () => { clearInterval(ping); clients.delete(res); });
+    // Di hosting tanpa proses yang menyala terus-menerus (mis. fungsi serverless), koneksi
+    // ditutup rapi sebelum batas waktu fungsi habis, supaya EventSource di klien otomatis
+    // menyambung ulang alih-alih dianggap galat. SSE_MAX_MS=0 menonaktifkan ini (server biasa).
+    const maxMs = Number(process.env.SSE_MAX_MS || 0);
+    const closer = maxMs > 0 ? setTimeout(() => res.end(), maxMs) : null;
+    const cleanup = () => { clearInterval(ping); if (closer) clearTimeout(closer); clients.delete(res); };
+    req.on('close', cleanup);
+    res.on('finish', cleanup);
   }));
 
   /* ---------- YouTube (khusus Super User) ---------- */
