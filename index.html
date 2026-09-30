@@ -2444,17 +2444,23 @@ body .row:has(>.h2hb)>.linkbtn .chip{font-size:10px!important;padding:1px 6px!im
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
 /* ===== Mode server: aktif bila alamat API diketahui (?api=..., tersimpan, atau server lokal di port 3000) ===== */
+const PROD_API='https://ai-arena-lovat.vercel.app';
 const API_BASE=(()=>{try{
   const q=new URLSearchParams(location.search).get('api');
   if(q==='off'){localStorage.removeItem('ai-arena-api');return ''}
   if(q){const u=q.replace(/\/+$/,'');localStorage.setItem('ai-arena-api',u);return u}
   const st=localStorage.getItem('ai-arena-api');if(st)return st;
   const h=location.hostname;
-  if(/^(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)$/.test(h)){
+  const isLocal=/^(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)$/.test(h);
+  if(isLocal){
     const x=new XMLHttpRequest();x.open('GET',location.protocol+'//'+h+':3000/api/health',false);
     try{x.send();if(x.status===200&&JSON.parse(x.responseText).ok){const u=location.protocol+'//'+h+':3000';localStorage.setItem('ai-arena-api',u);return u}}catch(e){}
+    return ''
   }
-  return ''}catch(e){return ''}})();
+  // Di luar jaringan lokal (GitHub Pages, aplikasi Android), pakai server online bawaan
+  // supaya semua orang tersambung ke data yang sama tanpa perlu mengatur alamat manual.
+  return PROD_API;
+  }catch(e){return ''}})();
 const THEME_KEY='ai-arena-theme';
 const themePref=()=>{try{return localStorage.getItem(THEME_KEY)||'auto'}catch(e){return 'auto'}};
 function applyTheme(){const c=themePref(),dark=c==='dark'||(c==='auto'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=dark?'dark':'light';const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=dark?'#0B1030':'#0B3B8C'}
@@ -2567,6 +2573,7 @@ function vLogin(){ensureCodes();const ex=[];const adm=S.adminCode,lead=S.clubs.f
   <h1 class="lg-h">Selamat datang di ${APP}</h1><p class="small muted lg-p">Masukkan kode yang kamu terima dari ketua PB atau pengelola GOR. Kamu akan langsung masuk dengan namamu.</p>
   <div class="panel lg-box"><label for="lgCode">Kode masuk</label><input id="lgCode" maxlength="12" placeholder="K7M2XQ" autocomplete="off" autocapitalize="characters" spellcheck="false">
   <button class="btn full" data-act="loginCode">Masuk</button><p class="small lg-err" id="lgErr" role="alert"></p></div>
+  ${(()=>{const a=S.users.find(x=>x.role==='superadmin');return a?`<button class="btn ghost full" style="margin-top:10px" data-act="loginAdmin">Masuk sebagai Pengelola GOR (${esc(a.name)})</button>`:''})()}
   ${ui.lgReg==='form'?`<div class="panel lg-box lg-reg"><h2>Ajukan PB baru</h2><label for="lgKN">Nama ketua</label><input id="lgKN" class="lg-t" maxlength="40" autocomplete="off"><label for="lgHp">Nomor HP ketua</label><input id="lgHp" class="lg-t" type="tel" inputmode="tel" maxlength="16" placeholder="081234567890"><label for="lgPB">Nama PB</label><input id="lgPB" class="lg-t" maxlength="40" autocomplete="off"><label for="lgAng">Nama anggota (satu nama per baris, opsional)</label><textarea id="lgAng" class="lg-t" rows="4" maxlength="800" placeholder="Budi&#10;Citra&#10;Dewi"></textarea><button class="btn full" data-act="lgRegister">Kirim pendaftaran</button><button class="btn ghost full" data-act="lgRegBack">Batal</button></div>`:ui.lgReg==='done'?`<div class="panel lg-box"><h2>Pendaftaran terkirim</h2><p class="small">PB <b>${esc((ui.lgRegInfo||{}).pb||'')}</b> menunggu konfirmasi pengelola GOR (Super User). Setelah disetujui, kamu akan menerima <b>kode masuk</b> dari pengelola. Masukkan kode itu di sini untuk masuk sebagai ketua.</p><button class="btn full" data-act="lgRegBack">Kembali</button></div>`:`<button class="btn ghost full lg-regbtn" data-act="lgReg">Ajukan PB baru</button>`}
   <details class="panel lg-demo"><summary><b>Kode contoh untuk mencoba</b></summary>${ex.map(x=>`<div class="row"><div class="grow"><b>${esc(x[0])}</b></div><button class="chip codechip" data-act="fillCode" data-c="${esc(x[1])}">${esc(x[1])}</button></div>`).join('')}<p class="small muted" style="margin:6px 0 0">Ketuk kode untuk mengisinya otomatis.</p></details></main>`}
 const UI_KEY='ai-arena-ui-v1';
@@ -3699,8 +3706,7 @@ function vMenu(){
   rows.push(it('club','GOR','Jadwal tetap dan lapangan','data-act="tab" data-t="club"','t'));
   if(admin)rows.push(it('user','Profil','Foto, nama, dan kontak akun','data-act="openAkun"','a'));
   if(!admin)rows.push(it('user','Profil saya','Rating, riwayat, dan statistik',`data-act="profile" data-id="${ME}"`,'b'));
-  const cur=admin?'super':leaderClubs().length?'ketua':'anggota',RL=[['super','Super User'],['ketua','Ketua PB'],['anggota','Anggota']];
-  const roleSw=`<section class="sec rolesw"><h2>Peran akun</h2><div class="tabs sm cseg" role="group" aria-label="Peran akun">${RL.map(r=>`<button aria-pressed="${cur===r[0]}" data-act="setRole" data-r="${r[0]}">${r[1]}</button>`).join('')}</div><p class="small muted">Masuk sebagai <b>${esc(u.name)}</b>, ${esc(roleLabel(u))}.</p></section>`;
+  const roleSw=`<section class="sec"><p class="small muted">Masuk sebagai <b>${esc(u.name)}</b>, ${esc(roleLabel(u))}.</p><button class="btn sm ghost" data-act="logout">Keluar</button></section>`;
   const tp=themePref(),themeSw=`<div class="tsw" role="group" aria-label="Tampilan">${[['light','Terang'],['dark','Gelap'],['auto','Otomatis']].map(x=>`<button aria-pressed="${tp===x[0]}" data-act="setTheme" data-th="${x[0]}">${x[1]}</button>`).join('')}</div>`;
   const more=admin?'':`<div class="panel mlist">${it('live','Siaran langsung','Tonton laga yang sedang main','data-act="tab" data-t="live"','r')}${it('chat','Obrolan dan galeri','Ngobrol dan lihat foto','data-act="tab" data-t="chat"','p')}</div>`;
   const dataMgr=admin&&!API_BASE?`<section class="sec"><h2>Data aplikasi (perangkat ini)</h2><p class="small muted" style="margin:0 0 8px">Belum tersambung ke server, jadi semua data (akun, laga, PB, dan lainnya) hanya tersimpan di perangkat ini sebagai satu berkas JSON. Peran tiap akun (Super User, ketua, anggota) ikut tersimpan otomatis, tanpa perlu diatur ulang.</p>
@@ -3971,8 +3977,7 @@ function confirmHtml(){const c=ui.confirm;if(!c)return '';return `<div class="sc
 function vModal(){
   const M=ui.modal; if(!M)return confirmHtml();
   if(M.type==='photo'){const p=S.gallery.find(x=>x.id===M.id);if(!p){ui.modal=null;return ''}return vLightbox(p)}
-  if(M.type==='pickRole'){const h=`<h2>Pilih akun ${M.r==='ketua'?'ketua PB':'anggota'}</h2><p class="small muted">Ada ${M.list.length} akun untuk peran ini.</p><div class="panel mlist">${M.list.map(x=>`<button class="mrow" data-act="pickRoleGo" data-id="${x.id}"><span class="grow"><b>${esc(x.label)}</b><small>${esc(x.sub)}</small></span>${svg('chev','mch')}</button>`).join('')}</div>`;
-    return `<div class="scrim" data-act="scrimClose"><div class="sheet sm" role="dialog" aria-modal="true">${h}<button class="btn ghost full" data-act="closeModal">Tutup</button></div></div>`}
+
   let h='';
   if(M.type==='scan'){
     const r=M.result;
@@ -4970,18 +4975,7 @@ const A={
       else{m.cur=newCur(m.teamA,m.teamB,s);toast('Gim '+m.games.length+' untuk '+names(s==='a'?m.teamA:m.teamB)+'. Istirahat 2 menit.')}}
     logSnap(m);commit()},
   uStart(){const m=match(ui.matchId),c=m&&m.cur;if(!c)return;c.go=true;if(!m.startedAt&&!m.games.length)m.startedAt=Date.now();commit(m.games.length?'Gim '+(m.games.length+1)+' dimulai.':'Pertandingan dimulai.')},
-  setRole(d){const ok=x=>x&&!x.role&&!x.guest;
-    const goId=id=>{setMe(id);ui={...ui,tab:'menu',view:null,modal:null,clubSel:null,rankClub:null,galTab:'all'};commit('Sekarang masuk sebagai '+user(id).name+' ('+roleLabel(user(id))+').')};
-    if(d.r==='super'){const a=S.users.find(x=>x.role==='superadmin');if(!a)return toast('Belum ada akun untuk peran ini. Isi data contoh dulu.');return goId(a.id)}
-    let list=[];
-    if(d.r==='ketua')list=S.clubs.filter(c=>c.status==='approved'&&ok(user(c.leaderId))).map(c=>({id:c.leaderId,label:user(c.leaderId).name,sub:c.name}));
-    else{const lead=new Set(S.clubs.map(c=>c.leaderId)),seen=new Set();
-      S.clubs.filter(c=>c.status==='approved').forEach(c=>c.members.filter(x=>ok(user(x))&&!lead.has(x)).forEach(x=>{if(seen.has(x))return;seen.add(x);list.push({id:x,label:user(x).name,sub:c.name})}))}
-    if(!list.length){toast('Belum ada akun untuk peran ini. Isi data contoh dulu.');return}
-    if(list.length===1)return goId(list[0].id);
-    ui.modal={type:'pickRole',r:d.r,list};render()},
-  pickRoleGo(d){const M=ui.modal;if(!M||M.type!=='pickRole')return;const id=d.id;if(!user(id))return;
-    setMe(id);ui={...ui,tab:'menu',view:null,modal:null,clubSel:null,rankClub:null,galTab:'all'};commit('Sekarang masuk sebagai '+user(id).name+' ('+roleLabel(user(id))+').')},
+  loginAdmin(){const a=S.users.find(x=>x.role==='superadmin');if(!a)return;setMe(a.id);ui={...ui,tab:'home',view:null,modal:null};commit('Selamat datang kembali, '+a.name+'.')},
   setTheme(d){try{localStorage.setItem(THEME_KEY,d.th)}catch(e){}applyTheme();render(true)},
   loginCode(){if(API_BASE)return srvLogin();const raw=((document.getElementById('lgCode')||{}).value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');const err=t=>{const e=document.getElementById('lgErr');if(e)e.textContent=t;toast(t)};
     if(!raw)return err('Masukkan kode terlebih dahulu.');
@@ -5007,7 +5001,7 @@ const A={
     (S.users.filter(x=>x.role==='superadmin')).forEach(a=>notify(a.id,'Pendaftaran PB baru: '+pb+' (ketua '+kn+'). Menunggu konfirmasi.',{tab:'komunitas'}));
     ui.lgReg='done';ui.lgRegInfo={pb,kn};commit()},
   copyLogin(d){try{navigator.clipboard.writeText(d.c);toast('Kode '+d.c+' disalin.')}catch(e){toast('Kode: '+d.c)}},
-  logout(){try{localStorage.removeItem(LOGIN_KEY);sessionStorage.removeItem(KEY+':me')}catch(e){}LOGGED=false;ME='ade';ui={...ui,tab:'home',view:null,modal:null};render()},
+  logout(){try{localStorage.removeItem(LOGIN_KEY);sessionStorage.removeItem(KEY+':me')}catch(e){}LOGGED=false;ui={...ui,tab:'home',view:null,modal:null};render()},
   cbdNav(d){const e=document.querySelector('.cbd2');if(e)e.scrollBy({left:(+d.d)*e.clientWidth*.86,behavior:'smooth'})},
   uSwapPos(d){const m=match(ui.matchId),c=m&&m.cur;if(!c||c.a+c.b!==0)return;const p=c.pos[d.side];if(p&&p.L!=null){[p.R,p.L]=[p.L,p.R];c.srv=c.pos[c.server][c[c.server]%2===0?'R':'L']||c.pos[c.server].R;commit()}},
   uFirst(d){const m=match(ui.matchId),c=m&&m.cur;if(!c||c.a+c.b!==0||m.games.length)return;c.server=d.side;c.srv=c.pos[d.side].R;commit()},
