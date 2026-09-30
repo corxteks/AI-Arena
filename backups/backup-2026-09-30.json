@@ -1,0 +1,208 @@
+{
+  "users": [
+    {
+      "id": "ade",
+      "name": "Ade",
+      "phone": "082345999999",
+      "role": "superadmin",
+      "level": "Intermediate",
+      "elo": 1200,
+      "photo": null,
+      "code": null,
+      "code_used": false,
+      "created_at": "2026-09-30T09:31:32.300Z",
+      "password_hash": "7cb7fd715fdbf72c9283bfd595371bd3:1b64538a837041068f2e549ce437ae3c5f8cd31edfa76fa7fc1d0ca5b69c7c6b62e8c067b09659d8075a1bd744f1a2af5b086422380541a9607007adf4dc7625",
+      "is_demo": false
+    },
+    {
+      "id": "uda8c0601c8",
+      "name": "Ketua Demo",
+      "phone": "",
+      "role": "member",
+      "level": "Intermediate",
+      "elo": 1200,
+      "photo": null,
+      "code": "DEMOKETUA",
+      "code_used": false,
+      "created_at": "2026-09-30T12:09:26.131Z",
+      "password_hash": null,
+      "is_demo": true
+    },
+    {
+      "id": "u3cbe037822",
+      "name": "Anggota Demo 1",
+      "phone": "",
+      "role": "member",
+      "level": "Intermediate",
+      "elo": 1200,
+      "photo": null,
+      "code": "DEMOANGGOTA1",
+      "code_used": false,
+      "created_at": "2026-09-30T12:09:26.131Z",
+      "password_hash": null,
+      "is_demo": true
+    },
+    {
+      "id": "u6825938b56",
+      "name": "Anggota Demo 2",
+      "phone": "",
+      "role": "member",
+      "level": "Intermediate",
+      "elo": 1200,
+      "photo": null,
+      "code": "DEMOANGGOTA2",
+      "code_used": false,
+      "created_at": "2026-09-30T12:09:26.131Z",
+      "password_hash": null,
+      "is_demo": true
+    }
+  ],
+  "clubs": [
+    {
+      "id": "ca96f80f72c",
+      "name": "PB Demo",
+      "name_key": "pb demo",
+      "status": "approved",
+      "code": "F25JCU",
+      "leader_id": "uda8c0601c8",
+      "day": 2,
+      "time": "19:00",
+      "court": null,
+      "elo": 1200,
+      "played": 0,
+      "wins": 0,
+      "created_at": "2026-09-30T12:09:26.131Z",
+      "approved_at": "2026-09-30T12:09:26.131Z"
+    }
+  ],
+  "club_members": [
+    {
+      "club_id": "ca96f80f72c",
+      "user_id": "uda8c0601c8",
+      "joined_at": "2026-09-30T12:09:26.131Z"
+    },
+    {
+      "club_id": "ca96f80f72c",
+      "user_id": "u3cbe037822",
+      "joined_at": "2026-09-30T12:09:26.131Z"
+    },
+    {
+      "club_id": "ca96f80f72c",
+      "user_id": "u6825938b56",
+      "joined_at": "2026-09-30T12:09:26.131Z"
+    }
+  ],
+  "invites": [],
+  "app_state": [
+    {
+      "id": 1,
+      "doc": {
+        "d12b": true,
+        "chats": {
+          "lounge": []
+        },
+        "clubs": [
+          {
+            "id": "ca96f80f72c",
+            "day": 2,
+            "elo": 1200,
+            "name": "PB Demo",
+            "time": "19:00",
+            "wins": 0,
+            "court": "Lapangan 1",
+            "played": 0,
+            "status": "approved",
+            "members": [
+              "uda8c0601c8",
+              "u3cbe037822",
+              "u6825938b56"
+            ],
+            "receipt": "",
+            "leaderId": "uda8c0601c8",
+            "requests": [],
+            "createdAt": 1790770584410
+          }
+        ],
+        "mutes": [],
+        "quota": {
+          "date": "Wed Sep 30 2026",
+          "used": 0
+        },
+        "reads": {},
+        "rmute": {},
+        "users": [
+          {
+            "id": "ade",
+            "elo": 0,
+            "hist": [],
+            "name": "Ade",
+            "role": "superadmin",
+            "wins": 0,
+            "level": "—",
+            "phone": "082345999999",
+            "played": 0,
+            "lastScan": 1790770583774,
+            "tourDone": true
+          },
+          {
+            "id": "u3cbe037822",
+            "elo": 1200,
+            "hist": [],
+            "name": "Anggota Demo 1",
+            "wins": 0,
+            "fresh": true,
+            "level": "Intermediate",
+            "rated": false,
+            "played": 0,
+            "lastScan": 1790770584410
+          },
+          {
+            "id": "u6825938b56",
+            "elo": 1200,
+            "hist": [],
+            "name": "Anggota Demo 2",
+            "wins": 0,
+            "fresh": true,
+            "level": "Intermediate",
+            "rated": false,
+            "played": 0,
+            "lastScan": 1790770584410
+          },
+          {
+            "id": "uda8c0601c8",
+            "elo": 1200,
+            "hist": [],
+            "name": "Ketua Demo",
+            "wins": 0,
+            "fresh": true,
+            "level": "Intermediate",
+            "rated": false,
+            "played": 0,
+            "lastScan": 1790770584410
+          }
+        ],
+        "notifs": [],
+        "gallery": [],
+        "matches": [],
+        "reports": [],
+        "payments": [],
+        "tourneys": [],
+        "schedules": [],
+        "challenges": [],
+        "courtSched": [],
+        "adminClaimed": true,
+        "announcements": []
+      },
+      "version": "7",
+      "updated_at": "2026-09-30T12:16:27.391Z",
+      "updated_by": "ade"
+    }
+  ],
+  "streams": [],
+  "settings": [
+    {
+      "key": "admin_claimed",
+      "value": true
+    }
+  ]
+}
