@@ -231,7 +231,7 @@ test('PUT /state: bagian Super User dan identitas dijaga server', async () => {
   const ids = (await api('GET', '/api/clubs', undefined, adminToken)).body.clubs[0];
   const leader = ids.leaderId;
   r = await api('PUT', '/api/state', { baseVersion: r.body.version, doc: {
-    announcements: [], matches: [{ id: 'm1' }],
+    announcements: [], matches: [{ id: 'm1', clubId: A.clubId }],
     users: [{ id: leader, name: 'Diubah', role: 'superadmin' }, { id: 'ghost', name: 'Hantu', role: 'superadmin' }],
     clubs: [{ id: ids.id, name: 'Nama Palsu', status: 'pending', leaderId: 'ghost', members: [] }],
   } }, A.leaderToken);
@@ -239,12 +239,57 @@ test('PUT /state: bagian Super User dan identitas dijaga server', async () => {
   assert.deepEqual(r.body.ignored, ['announcements']);
   st = await get(adminToken);
   assert.deepEqual(st.doc.announcements, [{ id: 1 }]);
-  assert.deepEqual(st.doc.matches, [{ id: 'm1' }]);
+  assert.deepEqual(st.doc.matches, [{ id: 'm1', clubId: A.clubId }]);
   assert.equal(st.doc.users.find(u => u.id === leader).name, 'Ketua PB Satu');
   assert.equal(st.doc.users.find(u => u.id === leader).role, undefined);
   assert.equal(st.doc.users.find(u => u.id === 'ghost').role, undefined);
   const c = st.doc.clubs[0];
   assert.deepEqual([c.name, c.status, c.leaderId, c.members], ['PB Satu', 'approved', leader, [leader]]);
+});
+
+test('PUT /state: laga dan tantangan hanya bisa diubah pihak yang terlibat', async () => {
+  const adminToken = await setup();
+  const A = await makeClub(adminToken, 'PB Ketua');
+  const B = await makeClub(adminToken, 'PB Lain');
+  const outsiderToken = B.leaderToken; // ketua PB lain, tidak terlibat sama sekali
+  const get = async tok => (await api('GET', '/api/state', undefined, tok)).body;
+  const add = await api('POST', `/api/clubs/${A.clubId}/members`, { name: 'Pemain X' }, A.leaderToken);
+  const memberLogin = await api('POST', '/api/auth/login', { code: add.body.code });
+  const memberId = memberLogin.body.user.id, memberToken = memberLogin.body.token;
+  let st = await get(adminToken);
+  // Pemain X membuat laga dan tantangan yang melibatkan dirinya sendiri: diterima.
+  let r = await api('PUT', '/api/state', { baseVersion: st.version, doc: {
+    matches: [{ id: 'm1', clubId: A.clubId, teamA: [memberId], teamB: ['y'] }],
+    challenges: [{ id: 'c1', from: [memberId], to: ['y'], status: 'pending' }],
+  } }, memberToken);
+  assert.equal(r.status, 200);
+  assert.equal(r.body.ignored, undefined);
+  // Ketua PB lain (tidak terlibat sama sekali) mencoba mengubah laga dan tantangan itu: ditolak, tetap versi lama.
+  r = await api('PUT', '/api/state', { baseVersion: r.body.version, doc: {
+    matches: [{ id: 'm1', clubId: A.clubId, teamA: [memberId], teamB: ['y'], status: 'verified' }],
+    challenges: [{ id: 'c1', from: [memberId], to: ['y'], status: 'accepted' }],
+  } }, outsiderToken);
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.body.ignored, ['matches', 'challenges']);
+  st = await get(adminToken);
+  assert.equal(st.doc.matches[0].status, undefined);
+  assert.equal(st.doc.challenges[0].status, 'pending');
+  // Pemain X sendiri (bukan ketua, bukan admin, sekadar salah satu pemain di laga itu) boleh mengubahnya.
+  r = await api('PUT', '/api/state', { baseVersion: st.version, doc: {
+    matches: [{ id: 'm1', clubId: A.clubId, teamA: [memberId], teamB: ['y'], status: 'verified' }],
+    challenges: st.doc.challenges,
+  } }, memberToken);
+  assert.equal(r.status, 200);
+  assert.equal(r.body.ignored, undefined);
+  // Super User boleh mengubah apa saja, termasuk turnamen (khusus admin).
+  st = await get(adminToken);
+  r = await api('PUT', '/api/state', { baseVersion: st.version, doc: { ...st.doc, tourneys: [{ id: 't1' }] } }, adminToken);
+  assert.equal(r.status, 200);
+  assert.equal(r.body.ignored, undefined);
+  // Ketua (bukan admin) tidak boleh membuat/mengubah turnamen.
+  r = await api('PUT', '/api/state', { baseVersion: r.body.version, doc: { tourneys: [{ id: 't1' }, { id: 't2' }] } }, A.leaderToken);
+  assert.equal(r.status, 200);
+  assert.ok(r.body.ignored.includes('tourneys'));
 });
 
 test('kode tidak dikenal dan kosong', async () => {
