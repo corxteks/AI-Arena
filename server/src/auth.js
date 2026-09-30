@@ -1,5 +1,7 @@
 import { query, tx } from './db.js';
-import { HttpError, newCode, normCode, nameKey, normPhone, validPhone, rid, signToken, verifyToken } from './util.js';
+import { HttpError, newCode, normCode, nameKey, normPhone, validPhone, rid, signToken, verifyToken, hashPassword, verifyPassword } from './util.js';
+
+const validPassword = p => typeof p === 'string' && p.length >= 8 && p.length <= 100;
 
 export const publicUser = u => ({ id: u.id, name: u.name, phone: u.phone, role: u.role, level: u.level, elo: u.elo, photo: u.photo || null });
 
@@ -46,23 +48,44 @@ export async function roleOf(user) {
 /* ---------- alur ---------- */
 
 /** Pengelola dibuat sekali. Setelah itu endpoint ini ditolak. */
-export async function setupAdmin({ name, phone }) {
+export async function setupAdmin({ name, phone, password }) {
   const nm = String(name || '').trim().slice(0, 40);
   const hp = String(phone || '').trim();
   if (!nm) throw new HttpError(400, 'Isi nama pengelola.');
   if (hp && !validPhone(hp)) throw new HttpError(400, 'Nomor HP tidak valid. Contoh: 081234567890.');
+  if (!validPassword(password)) throw new HttpError(400, 'Kata sandi minimal 8 karakter.');
+  const hash = await hashPassword(password);
   return tx(async db => {
     // Kunci penasihat supaya dua permintaan bersamaan tidak membuat dua pengelola.
     await db.query('SELECT pg_advisory_xact_lock(4242)');
     const claimed = await db.query(`SELECT 1 FROM settings WHERE key='admin_claimed'`);
     if (claimed.rowCount) throw new HttpError(409, 'Aplikasi ini sudah punya pengelola.');
     const u = (await db.query(
-      `INSERT INTO users (id,name,phone,role) VALUES ($1,$2,$3,'superadmin') RETURNING *`,
-      ['ade', nm, hp ? normPhone(hp) : ''])).rows[0];
+      `INSERT INTO users (id,name,phone,role,password_hash) VALUES ($1,$2,$3,'superadmin',$4) RETURNING *`,
+      ['ade', nm, hp ? normPhone(hp) : '', hash])).rows[0];
     await db.query(`INSERT INTO settings (key,value) VALUES ('admin_claimed','true'::jsonb)`);
     await db.query(`INSERT INTO audit_log (actor_id,action) VALUES ($1,'setup_admin')`, [u.id]);
     return { user: publicUser(u), token: signToken(u) };
   });
+}
+
+/** Masuk sebagai Super User dengan kata sandi. Akun lama tanpa kata sandi wajib mengaturnya dulu. */
+export async function loginAdmin(password) {
+  const a = (await query(`SELECT * FROM users WHERE role='superadmin' LIMIT 1`)).rows[0];
+  if (!a) throw new HttpError(404, 'Belum ada pengelola.');
+  if (!a.password_hash) throw new HttpError(409, 'Kata sandi belum diatur untuk akun ini. Atur dulu kata sandinya.');
+  if (typeof password !== 'string' || !(await verifyPassword(password, a.password_hash))) throw new HttpError(401, 'Kata sandi salah.');
+  return { user: publicUser(a), token: signToken(a) };
+}
+
+/** Akun Super User lama (dibuat sebelum ada kata sandi) mengatur kata sandinya sekali, memakai token lamanya. */
+export async function setAdminPassword(user, password) {
+  if (user.role !== 'superadmin') throw new HttpError(403, 'Hanya Super User.');
+  if (!validPassword(password)) throw new HttpError(400, 'Kata sandi minimal 8 karakter.');
+  const hash = await hashPassword(password);
+  await query('UPDATE users SET password_hash=$2 WHERE id=$1', [user.id, hash]);
+  await query(`INSERT INTO audit_log (actor_id,action) VALUES ($1,'admin_set_password')`, [user.id]);
+  return { ok: true };
 }
 
 export async function adminClaimed() {

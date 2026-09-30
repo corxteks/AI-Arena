@@ -41,7 +41,13 @@ const api = async (method, path, body, token) => {
   return { status: r.status, body: await r.json().catch(() => ({})) };
 };
 
-const setup = async () => (await api('POST', '/api/auth/setup-admin', { name: 'Pengelola Uji', phone: '081234567890' })).body.token;
+const setup = async () => (await api('POST', '/api/auth/setup-admin', { name: 'Pengelola Uji', phone: '081234567890', password: 'sandi-kuat-123' })).body.token;
+/** Simulasikan Super User lama (dibuat sebelum fitur kata sandi ada): tanpa password_hash. */
+async function setup2NoPassword() {
+  const r = await api('POST', '/api/auth/setup-admin', { name: 'Ade Lama', phone: '081234567890', password: 'sandi-sementara-123' });
+  await query(`UPDATE users SET password_hash=NULL WHERE id=$1`, [r.body.user.id]);
+  return r.body.token;
+}
 
 /** Buat PB yang sudah disetujui beserta ketuanya yang sudah masuk. */
 async function makeClub(adminToken, name = 'PB Uji', members = []) {
@@ -65,19 +71,37 @@ test('kesehatan dan status pengelola', async () => {
 test('setup pengelola: validasi, sekali saja', async () => {
   assert.equal((await api('POST', '/api/auth/setup-admin', { name: '' })).status, 400);
   assert.equal((await api('POST', '/api/auth/setup-admin', { name: 'A', phone: '123' })).status, 400);
-  const ok = await api('POST', '/api/auth/setup-admin', { name: 'Ade', phone: '081234567890' });
+  assert.equal((await api('POST', '/api/auth/setup-admin', { name: 'A', phone: '081234567890', password: 'pendek' })).status, 400);
+  const ok = await api('POST', '/api/auth/setup-admin', { name: 'Ade', phone: '081234567890', password: 'sandi-kuat-123' });
   assert.equal(ok.status, 201);
   assert.equal(ok.body.user.role, 'superadmin');
-  assert.equal((await api('POST', '/api/auth/setup-admin', { name: 'Penyusup' })).status, 409);
+  assert.equal((await api('POST', '/api/auth/setup-admin', { name: 'Penyusup', password: 'sandi-kuat-123' })).status, 409);
   const me = await api('GET', '/api/me', undefined, ok.body.token);
   assert.equal(me.body.role, 'super');
   assert.equal((await api('GET', '/api/health')).body.adminClaimed, true);
 });
 
 test('setup pengelola bersamaan hanya menghasilkan satu akun', async () => {
-  const rs = await Promise.all([1, 2, 3, 4].map(i => api('POST', '/api/auth/setup-admin', { name: 'Pengelola ' + i })));
+  const rs = await Promise.all([1, 2, 3, 4].map(i => api('POST', '/api/auth/setup-admin', { name: 'Pengelola ' + i, password: 'sandi-kuat-123' })));
   assert.equal(rs.filter(r => r.status === 201).length, 1);
   assert.equal((await query(`SELECT count(*)::int n FROM users WHERE role='superadmin'`)).rows[0].n, 1);
+});
+
+test('masuk sebagai Super User dengan kata sandi', async () => {
+  await api('POST', '/api/auth/setup-admin', { name: 'Ade', phone: '081234567890', password: 'sandi-kuat-123' });
+  assert.equal((await api('POST', '/api/auth/login-admin', { password: 'salah-sandi' })).status, 401);
+  const ok = await api('POST', '/api/auth/login-admin', { password: 'sandi-kuat-123' });
+  assert.equal(ok.status, 200);
+  assert.equal(ok.body.user.role, 'superadmin');
+});
+
+test('akun Super User lama tanpa kata sandi wajib mengaturnya dulu, lalu bisa dipakai masuk', async () => {
+  const adminToken = await setup2NoPassword();
+  assert.equal((await api('POST', '/api/auth/login-admin', { password: 'apa-saja' })).status, 409);
+  assert.equal((await api('POST', '/api/auth/set-admin-password', { password: 'pendek' }, adminToken)).status, 400);
+  assert.equal((await api('POST', '/api/auth/set-admin-password', { password: 'sandi-baru-123' }, adminToken)).status, 200);
+  assert.equal((await api('POST', '/api/auth/login-admin', { password: 'salah' })).status, 401);
+  assert.equal((await api('POST', '/api/auth/login-admin', { password: 'sandi-baru-123' })).status, 200);
 });
 
 test('endpoint terlindungi butuh token', async () => {
