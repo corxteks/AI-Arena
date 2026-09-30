@@ -90,6 +90,10 @@ export function createApp() {
     }
     const version = Number(r.rows[0].version);
     broadcast({ type: 'state', version, by: req.user.id });
+    if (clean.ignored.length) {
+      // Percobaan mengubah bagian yang bukan haknya dicatat untuk jejak audit (bukan tiap penyimpanan biasa).
+      query(`INSERT INTO audit_log (actor_id,action,detail) VALUES ($1,'state_write_denied',$2)`, [req.user.id, { keys: clean.ignored, version }]).catch(() => {});
+    }
     res.json({ version, ...(clean.ignored.length ? { ignored: clean.ignored } : {}) });
   }));
 
