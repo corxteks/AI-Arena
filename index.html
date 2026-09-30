@@ -3977,6 +3977,27 @@ function confirmHtml(){const c=ui.confirm;if(!c)return '';return `<div class="sc
 function vModal(){
   const M=ui.modal; if(!M)return confirmHtml();
   if(M.type==='photo'){const p=S.gallery.find(x=>x.id===M.id);if(!p){ui.modal=null;return ''}return vLightbox(p)}
+  if(M.type==='welcomeTour'){
+    const u2=me(),role=isAdmin()?'super':leaderClubs().length?'ketua':'anggota';
+    const STEPS={
+      anggota:[['Selamat datang di AI ARENA!','Ini komunitas main bulutangkis di GOR ini. Cari lawan, main, dan pantau perkembanganmu di satu tempat.'],
+        ['Cari lawan tanding','Buka tab Tanding, lalu Tantangan, untuk menantang pemain lain. Setelah main, skor dicatat dan ELO-mu otomatis berubah.'],
+        ['Peringkat dan profil','Tab Peringkat menunjukkan posisimu di antara semua pemain dan PB. Menu berisi profil dan PB-mu.'],
+        ['Siaran dan obrolan','Di Menu ada Siaran langsung untuk nonton laga yang sedang berjalan, dan Obrolan untuk ngobrol dengan sesama anggota.']],
+      ketua:[['Selamat datang, Ketua!','Kamu memimpin '+esc(leaderClubs()[0]?.name||'PB-mu')+'. Ini beberapa hal yang bisa kamu lakukan.'],
+        ['Tambah anggota','Buka Menu, Member dan PB, lalu halaman PB-mu. Tambah anggota di situ, lalu bagikan kode masuknya ke orangnya.'],
+        ['Atur jadwal lapangan','Halaman GOR dipakai untuk mengatur jadwal lapangan tetap PB-mu, dan melihat kode PB untuk anggota yang sudah punya akun.'],
+        ['Pantau laga anggotamu','Tab Tanding menampilkan laga dan tantangan anggotamu, termasuk skor yang menunggu keputusanmu.']],
+      super:[['Selamat datang, Pengelola GOR!','Kamu Super User aplikasi ini. Ini beberapa hal yang bisa kamu lakukan.'],
+        ['Setujui PB baru','Pendaftaran PB baru menunggu di Menu, Member dan PB, sebelum ketuanya bisa dipakai.'],
+        ['Atur GOR dan siaran','Halaman GOR untuk jadwal dan lapangan. Menu Siaran untuk menyalakan siaran langsung laga.'],
+        ['Kelola data','Di Menu ada pengaturan tampilan, dan (bila belum tersambung server) cadangan data perangkat ini.']],
+    }[role];
+    const n=STEPS.length,i=Math.min(M.step||0,n-1),[title,text]=STEPS[i];
+    const dots=STEPS.map((_,k)=>`<span class="dot" style="display:inline-block;width:6px;height:6px;border-radius:50%;margin:0 3px;background:${k===i?'currentColor':'var(--border)'}"></span>`).join('');
+    const h=`<h2>${esc(title)}</h2><p class="small muted">${esc(text)}</p><p style="text-align:center;margin:10px 0">${dots}</p>
+    <div class="two rbtn">${i>0?`<button class="btn ghost" data-act="tourBack">Kembali</button>`:`<button class="btn ghost" data-act="tourSkip">Lewati</button>`}<button class="btn" data-act="${i<n-1?'tourNext':'tourFinish'}">${i<n-1?'Lanjut':'Mengerti'}</button></div>`;
+    return `<div class="scrim" role="dialog" aria-modal="true"><div class="sheet sm">${h}</div></div>`}
 
   let h='';
   if(M.type==='scan'){
@@ -4515,6 +4536,7 @@ function render(preserve){applyBg();ESTC={};{const vk=[ui.tab,ui.view,ui.mTab,ui
   ensureCodes();const u=me(), admin=isAdmin(), app=document.getElementById('app');
   if(!S.adminClaimed){app.innerHTML=vSetup();return}
   if(!LOGGED){app.innerHTML=vLogin();return}
+  if(!u.tourDone&&!ui.modal){ui.modal={type:'welcomeTour',step:0}}
   if(ui.view==='umpire'){app.innerHTML=vUmpire()+vModal()+vZoom();after(keep,focus);return}
   if(ui.view==='watch'&&ui.wfs){app.innerHTML=vWatchFull()+vModal()+vZoom();after(keep,focus);return}
   if(ui.view==='rtv'){app.innerHTML=vRankTV();return}
@@ -4975,6 +4997,10 @@ const A={
       else{m.cur=newCur(m.teamA,m.teamB,s);toast('Gim '+m.games.length+' untuk '+names(s==='a'?m.teamA:m.teamB)+'. Istirahat 2 menit.')}}
     logSnap(m);commit()},
   uStart(){const m=match(ui.matchId),c=m&&m.cur;if(!c)return;c.go=true;if(!m.startedAt&&!m.games.length)m.startedAt=Date.now();commit(m.games.length?'Gim '+(m.games.length+1)+' dimulai.':'Pertandingan dimulai.')},
+  tourNext(){const M=ui.modal;if(!M||M.type!=='welcomeTour')return;M.step=(M.step||0)+1;render()},
+  tourBack(){const M=ui.modal;if(!M||M.type!=='welcomeTour')return;M.step=Math.max(0,(M.step||0)-1);render()},
+  tourSkip(){me().tourDone=true;ui.modal=null;commit()},
+  tourFinish(){me().tourDone=true;ui.modal=null;commit()},
   loginAdmin(){const a=S.users.find(x=>x.role==='superadmin');if(!a)return;setMe(a.id);ui={...ui,tab:'home',view:null,modal:null};commit('Selamat datang kembali, '+a.name+'.')},
   setTheme(d){try{localStorage.setItem(THEME_KEY,d.th)}catch(e){}applyTheme();render(true)},
   loginCode(){if(API_BASE)return srvLogin();const raw=((document.getElementById('lgCode')||{}).value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');const err=t=>{const e=document.getElementById('lgErr');if(e)e.textContent=t;toast(t)};
