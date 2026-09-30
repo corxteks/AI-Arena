@@ -1,4 +1,6 @@
-import { randomBytes, randomInt, createCipheriv, createDecipheriv } from 'node:crypto';
+import { randomBytes, randomInt, createCipheriv, createDecipheriv, scrypt, timingSafeEqual } from 'node:crypto';
+import { promisify } from 'node:util';
+const scryptAsync = promisify(scrypt);
 import jwt from 'jsonwebtoken';
 import { config } from './config.js';
 
@@ -38,6 +40,20 @@ export function decrypt(blob) {
   const d = createDecipheriv('aes-256-gcm', Buffer.from(config.tokenEncKey, 'hex'), iv);
   d.setAuthTag(tag);
   return Buffer.concat([d.update(data), d.final()]).toString('utf8');
+}
+
+/** Kata sandi Super User (scrypt, format "salt:hash" hex). Tidak memakai pustaka luar. */
+export async function hashPassword(plain) {
+  const salt = randomBytes(16);
+  const hash = await scryptAsync(plain, salt, 64);
+  return salt.toString('hex') + ':' + hash.toString('hex');
+}
+export async function verifyPassword(plain, stored) {
+  if (!stored || !stored.includes(':')) return false;
+  const [saltHex, hashHex] = stored.split(':');
+  const salt = Buffer.from(saltHex, 'hex'), expected = Buffer.from(hashHex, 'hex');
+  const actual = await scryptAsync(plain, salt, expected.length);
+  return timingSafeEqual(actual, expected);
 }
 
 /** Tanggal (YYYY-MM-DD) menurut waktu Pasifik: kuota YouTube direset tengah malam di sana. */

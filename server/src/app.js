@@ -40,6 +40,8 @@ export function createApp() {
 
   /* ---------- autentikasi ---------- */
   app.post('/api/auth/setup-admin', strict, wrap(async (req, res) => res.status(201).json(await auth.setupAdmin(req.body || {}))));
+  app.post('/api/auth/login-admin', strict, wrap(async (req, res) => res.json(await auth.loginAdmin((req.body || {}).password))));
+  app.post('/api/auth/set-admin-password', auth.requireAuth, wrap(async (req, res) => res.json(await auth.setAdminPassword(req.user, (req.body || {}).password))));
   app.post('/api/auth/login', strict, wrap(async (req, res) => { const r = await auth.loginWithCode((req.body || {}).code); broadcast({ type: 'identity' }); res.json(r); }));
   app.get('/api/me', auth.requireAuth, wrap(async (req, res) => {
     res.json({ user: auth.publicUser(req.user), role: await auth.roleOf(req.user) });

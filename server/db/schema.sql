@@ -24,6 +24,9 @@ CREATE TABLE IF NOT EXISTS users (
   code_used  boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+-- Kata sandi Super User (format scrypt "salt:hash" hex). Kolom ditambahkan belakangan,
+-- jadi dibuat lewat ALTER supaya basis data yang sudah ada ikut terbarui.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash text;
 
 CREATE TABLE IF NOT EXISTS clubs (
   id         text PRIMARY KEY,
