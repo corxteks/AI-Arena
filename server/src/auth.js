@@ -104,8 +104,8 @@ export async function loginWithCode(rawCode) {
       const pend = await db.query(`SELECT name FROM clubs WHERE leader_id=$1 AND status<>'approved'`, [u.id]);
       const ok = await db.query(`SELECT 1 FROM clubs WHERE leader_id=$1 AND status='approved'`, [u.id]);
       if (pend.rowCount && !ok.rowCount) throw new HttpError(403, `PB ${pend.rows[0].name} belum dikonfirmasi pengelola GOR. Kode bisa dipakai setelah disetujui.`);
-      await db.query(`UPDATE users SET code_used=true WHERE id=$1`, [u.id]);
-      return { user: publicUser({ ...u, code_used: true }), token: signToken(u), role: await roleOf(u) };
+      if (!u.is_demo) await db.query(`UPDATE users SET code_used=true WHERE id=$1`, [u.id]);
+      return { user: publicUser({ ...u, code_used: !u.is_demo }), token: signToken(u), role: await roleOf(u) };
     }
     const inv = await db.query(`SELECT * FROM invites WHERE code=$1 FOR UPDATE`, [code]);
     if (inv.rowCount) {

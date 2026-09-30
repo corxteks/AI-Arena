@@ -38,6 +38,14 @@ export function createApp() {
     res.json({ ok: true, adminClaimed: await auth.adminClaimed() });
   }));
 
+  // Daftar akun demo (kode bisa dipakai berkali-kali) untuk pengunjung mencoba. Tanpa data pribadi.
+  app.get('/api/demo', wrap(async (_req, res) => {
+    const rows = (await query(`SELECT u.name, u.code, CASE WHEN c.leader_id=u.id THEN 'ketua' ELSE 'anggota' END AS peran, c.name AS club
+      FROM users u LEFT JOIN club_members m ON m.user_id=u.id LEFT JOIN clubs c ON c.id=m.club_id
+      WHERE u.is_demo=true AND u.code IS NOT NULL ORDER BY peran DESC, u.name`)).rows;
+    res.json({ demo: rows });
+  }));
+
   /* ---------- autentikasi ---------- */
   app.post('/api/auth/setup-admin', strict, wrap(async (req, res) => res.status(201).json(await auth.setupAdmin(req.body || {}))));
   app.post('/api/auth/login-admin', strict, wrap(async (req, res) => res.json(await auth.loginAdmin((req.body || {}).password))));

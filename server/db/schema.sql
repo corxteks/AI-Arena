@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS users (
 -- Kata sandi Super User (format scrypt "salt:hash" hex). Kolom ditambahkan belakangan,
 -- jadi dibuat lewat ALTER supaya basis data yang sudah ada ikut terbarui.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash text;
+-- Akun demo: kode masuknya tidak pernah "habis", supaya banyak pengunjung bisa coba bergantian.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_demo boolean NOT NULL DEFAULT false;
 
 CREATE TABLE IF NOT EXISTS clubs (
   id         text PRIMARY KEY,

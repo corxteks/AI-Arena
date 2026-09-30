@@ -316,6 +316,23 @@ test('PUT /state: laga dan tantangan hanya bisa diubah pihak yang terlibat', asy
   assert.ok(r.body.ignored.includes('tourneys'));
 });
 
+test('akun demo: kode bisa dipakai berkali-kali dan muncul di /api/demo', async () => {
+  const adminToken = await setup();
+  const A = await makeClub(adminToken, 'PB Demo');
+  const demo = (await query(
+    `INSERT INTO users (id,name,phone,code,code_used,is_demo) VALUES ('udemo1','Anggota Demo','','DEMO01',false,true) RETURNING *`)).rows[0];
+  await query('INSERT INTO club_members (club_id,user_id) VALUES ($1,$2)', [A.clubId, demo.id]);
+  const list = await api('GET', '/api/demo');
+  assert.equal(list.status, 200);
+  assert.deepEqual(list.body.demo, [{ name: 'Anggota Demo', code: 'DEMO01', peran: 'anggota', club: 'PB Demo' }]);
+  const l1 = await api('POST', '/api/auth/login', { code: 'DEMO01' });
+  assert.equal(l1.status, 200);
+  assert.equal(l1.body.user.id, 'udemo1');
+  const l2 = await api('POST', '/api/auth/login', { code: 'DEMO01' });
+  assert.equal(l2.status, 200, 'kode demo tidak boleh habis setelah satu kali pakai');
+  assert.equal(l2.body.user.id, 'udemo1');
+});
+
 test('kode tidak dikenal dan kosong', async () => {
   assert.equal((await api('POST', '/api/auth/login', { code: 'ZZZZZZ' })).status, 404);
   assert.equal((await api('POST', '/api/auth/login', { code: '' })).status, 400);
