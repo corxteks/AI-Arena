@@ -5,7 +5,9 @@
   "description": "Backend AI ARENA: autentikasi kode, database PostgreSQL, sinkronisasi data, dan integrasi YouTube Live",
   "type": "module",
   "main": "src/index.js",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
@@ -20,6 +22,7 @@
     "googleapis": "^144.0.0",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
-    "pg": "^8.13.0"
+    "pg": "^8.13.0",
+    "serverless-http": "^3.2.0"
   }
 }
