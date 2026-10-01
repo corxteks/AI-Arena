@@ -5320,7 +5320,7 @@ async function enterApp(user,token){
   if(token){SRV.token=token;try{localStorage.setItem(KEY+':token',token)}catch(e){}}
   const st=await apiCall('GET','/api/state');SRV.version=st.version;
   const fresh=!(st.doc&&Array.isArray(st.doc.users)&&st.doc.users.length);
-  S=fresh?seed():st.doc;S.clubs=S.clubs||[];S.users=S.users||[];try{migrateTour()}catch(e){}
+  S=fresh?seed():st.doc;S.clubs=S.clubs||[];S.users=S.users||[];S.auditLog=S.auditLog||[];S.courtSched=S.courtSched||[];try{migrateTour()}catch(e){}
   await pullIdentity();
   if(user.role==='superadmin'){let a=S.users.find(x=>x.id===user.id);if(!a){a={id:user.id,name:user.name,level:'—',elo:0,played:0,wins:0,lastScan:Date.now(),hist:[],role:'superadmin'};S.users.unshift(a)}a.name=user.name;a.phone=user.phone||'';a.role='superadmin'}
   else if(!S.users.some(x=>x.id===user.id))S.users.push({id:user.id,name:user.name,level:user.level||'Intermediate',elo:user.elo||LEVEL_ELO.Intermediate,played:0,wins:0,lastScan:Date.now(),hist:[],rated:false,fresh:true});
