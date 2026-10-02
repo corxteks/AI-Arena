@@ -1,0 +1,614 @@
+{
+  "users": [
+    {
+      "id": "ade",
+      "name": "Ade",
+      "phone": "082345999999",
+      "role": "superadmin",
+      "level": "Intermediate",
+      "elo": 1200,
+      "photo": null,
+      "code": null,
+      "code_used": false,
+      "created_at": "2026-09-30T09:31:32.300Z",
+      "password_hash": "7cb7fd715fdbf72c9283bfd595371bd3:1b64538a837041068f2e549ce437ae3c5f8cd31edfa76fa7fc1d0ca5b69c7c6b62e8c067b09659d8075a1bd744f1a2af5b086422380541a9607007adf4dc7625",
+      "is_demo": false
+    },
+    {
+      "id": "uda8c0601c8",
+      "name": "Ketua Demo",
+      "phone": "",
+      "role": "member",
+      "level": "Intermediate",
+      "elo": 1200,
+      "photo": null,
+      "code": "DEMOKETUA",
+      "code_used": false,
+      "created_at": "2026-09-30T12:09:26.131Z",
+      "password_hash": null,
+      "is_demo": true
+    },
+    {
+      "id": "u3cbe037822",
+      "name": "Anggota Demo 1",
+      "phone": "",
+      "role": "member",
+      "level": "Intermediate",
+      "elo": 1200,
+      "photo": null,
+      "code": "DEMOANGGOTA1",
+      "code_used": false,
+      "created_at": "2026-09-30T12:09:26.131Z",
+      "password_hash": null,
+      "is_demo": true
+    },
+    {
+      "id": "u6825938b56",
+      "name": "Anggota Demo 2",
+      "phone": "",
+      "role": "member",
+      "level": "Intermediate",
+      "elo": 1200,
+      "photo": null,
+      "code": "DEMOANGGOTA2",
+      "code_used": false,
+      "created_at": "2026-09-30T12:09:26.131Z",
+      "password_hash": null,
+      "is_demo": true
+    },
+    {
+      "id": "u056f3247db",
+      "name": "Darmawan",
+      "phone": "0811401479",
+      "role": "member",
+      "level": "Intermediate",
+      "elo": 1200,
+      "photo": null,
+      "code": "MJM2F8",
+      "code_used": true,
+      "created_at": "2026-10-02T15:34:01.777Z",
+      "password_hash": null,
+      "is_demo": false
+    },
+    {
+      "id": "uafb1e69017",
+      "name": "Sidrat",
+      "phone": "",
+      "role": "member",
+      "level": "Intermediate",
+      "elo": 1200,
+      "photo": null,
+      "code": "QQL7FB",
+      "code_used": true,
+      "created_at": "2026-10-02T16:11:00.684Z",
+      "password_hash": null,
+      "is_demo": false
+    },
+    {
+      "id": "u8fb3c4376e",
+      "name": "Awan",
+      "phone": "",
+      "role": "member",
+      "level": "Intermediate",
+      "elo": 1200,
+      "photo": null,
+      "code": "2QK3W2",
+      "code_used": true,
+      "created_at": "2026-10-02T16:14:54.592Z",
+      "password_hash": null,
+      "is_demo": false
+    }
+  ],
+  "clubs": [
+    {
+      "id": "ca96f80f72c",
+      "name": "PB Demo",
+      "name_key": "pb demo",
+      "status": "approved",
+      "code": "F25JCU",
+      "leader_id": "uda8c0601c8",
+      "day": 2,
+      "time": "19:00",
+      "court": null,
+      "elo": 1200,
+      "played": 0,
+      "wins": 0,
+      "created_at": "2026-09-30T12:09:26.131Z",
+      "approved_at": "2026-09-30T12:09:26.131Z"
+    },
+    {
+      "id": "c5956a29ff4",
+      "name": "18 reborn",
+      "name_key": "18 reborn",
+      "status": "approved",
+      "code": "V79G87",
+      "leader_id": "u056f3247db",
+      "day": 2,
+      "time": "19:00",
+      "court": null,
+      "elo": 1200,
+      "played": 0,
+      "wins": 0,
+      "created_at": "2026-10-02T15:34:01.777Z",
+      "approved_at": "2026-10-02T15:36:37.937Z"
+    }
+  ],
+  "club_members": [
+    {
+      "club_id": "ca96f80f72c",
+      "user_id": "uda8c0601c8",
+      "joined_at": "2026-09-30T12:09:26.131Z"
+    },
+    {
+      "club_id": "ca96f80f72c",
+      "user_id": "u3cbe037822",
+      "joined_at": "2026-09-30T12:09:26.131Z"
+    },
+    {
+      "club_id": "ca96f80f72c",
+      "user_id": "u6825938b56",
+      "joined_at": "2026-09-30T12:09:26.131Z"
+    },
+    {
+      "club_id": "c5956a29ff4",
+      "user_id": "u056f3247db",
+      "joined_at": "2026-10-02T15:34:01.777Z"
+    },
+    {
+      "club_id": "c5956a29ff4",
+      "user_id": "uafb1e69017",
+      "joined_at": "2026-10-02T16:11:00.684Z"
+    },
+    {
+      "club_id": "c5956a29ff4",
+      "user_id": "u8fb3c4376e",
+      "joined_at": "2026-10-02T16:14:54.592Z"
+    }
+  ],
+  "invites": [
+    {
+      "id": "ic6f417266c",
+      "club_id": "c5956a29ff4",
+      "name": "Jabir",
+      "phone": "",
+      "code": "TT8MYX",
+      "created_at": "2026-10-02T15:34:01.777Z"
+    },
+    {
+      "id": "i898d5e27cd",
+      "club_id": "c5956a29ff4",
+      "name": "Kasim",
+      "phone": "",
+      "code": "CAWC3S",
+      "created_at": "2026-10-02T15:34:01.777Z"
+    },
+    {
+      "id": "i7c17045ebd",
+      "club_id": "c5956a29ff4",
+      "name": "Hasman",
+      "phone": "",
+      "code": "WCUB3S",
+      "created_at": "2026-10-02T15:34:01.777Z"
+    },
+    {
+      "id": "i1f40f913b3",
+      "club_id": "c5956a29ff4",
+      "name": "Ludi",
+      "phone": "",
+      "code": "V4VXMF",
+      "created_at": "2026-10-02T15:34:01.777Z"
+    },
+    {
+      "id": "ia04def12c7",
+      "club_id": "c5956a29ff4",
+      "name": "Limran",
+      "phone": "",
+      "code": "BK77PL",
+      "created_at": "2026-10-02T15:34:01.777Z"
+    },
+    {
+      "id": "id0b90ea2f6",
+      "club_id": "c5956a29ff4",
+      "name": "Ilo",
+      "phone": "",
+      "code": "PVTW79",
+      "created_at": "2026-10-02T15:34:01.777Z"
+    }
+  ],
+  "app_state": [
+    {
+      "id": 1,
+      "doc": {
+        "d12b": true,
+        "pins": {},
+        "chats": {
+          "lounge": [],
+          "dm:ade:u49u8er": []
+        },
+        "clubs": [
+          {
+            "id": "ca96f80f72c",
+            "day": 2,
+            "elo": 1200,
+            "name": "PB Demo",
+            "time": "19:00",
+            "wins": 0,
+            "court": "Lapangan 1",
+            "played": 0,
+            "status": "approved",
+            "members": [
+              "uda8c0601c8",
+              "u3cbe037822",
+              "u6825938b56"
+            ],
+            "receipt": "",
+            "leaderId": "uda8c0601c8",
+            "requests": [],
+            "createdAt": 1790770584410
+          },
+          {
+            "id": "c9wg99q",
+            "day": 1,
+            "elo": 1200,
+            "name": "Pb. 18 reboen",
+            "time": "20:00",
+            "wins": 0,
+            "court": "Lapangan 1",
+            "played": 0,
+            "status": "approved",
+            "history": [
+              {
+                "t": 1790933311822,
+                "by": "ade",
+                "text": "PB didaftarkan lewat Registrasi dan Jadwal oleh pengelola."
+              }
+            ],
+            "members": [
+              "u49u8er"
+            ],
+            "receipt": "",
+            "leaderId": "u49u8er",
+            "requests": [],
+            "createdAt": 1790933311821
+          },
+          {
+            "id": "cghuk6v",
+            "day": 6,
+            "elo": 1200,
+            "name": "Pb. 18 reborn",
+            "time": "20:00",
+            "wins": 0,
+            "court": "Lapangan 1",
+            "played": 0,
+            "status": "inactive",
+            "history": [
+              {
+                "t": 1790954294112,
+                "by": "ade",
+                "text": "PB didaftarkan lewat Registrasi dan Jadwal oleh pengelola."
+              },
+              {
+                "t": 1790959310645,
+                "by": "ade",
+                "text": "Sanksi nonaktif: Menunggak."
+              }
+            ],
+            "members": [
+              "uosolz0"
+            ],
+            "receipt": "",
+            "leaderId": "uosolz0",
+            "requests": [],
+            "createdAt": 1790954294112,
+            "sanctions": [
+              {
+                "t": 1790959310645,
+                "by": "ade",
+                "text": "Menunggak",
+                "type": "nonaktif"
+              }
+            ]
+          },
+          {
+            "id": "c5956a29ff4",
+            "day": 2,
+            "elo": 1200,
+            "name": "18 reborn",
+            "time": "19:00",
+            "wins": 0,
+            "court": "Lapangan 1",
+            "played": 0,
+            "status": "approved",
+            "members": [
+              "u056f3247db",
+              "uafb1e69017",
+              "u8fb3c4376e"
+            ],
+            "receipt": "",
+            "leaderId": "u056f3247db",
+            "requests": [],
+            "createdAt": 1790955367570
+          }
+        ],
+        "mutes": [],
+        "quota": {
+          "date": "Fri Oct 02 2026",
+          "used": 0
+        },
+        "reads": {},
+        "rmute": {},
+        "users": [
+          {
+            "id": "ade",
+            "elo": 0,
+            "hist": [],
+            "name": "Ade",
+            "role": "superadmin",
+            "wins": 0,
+            "level": "—",
+            "phone": "082345999999",
+            "played": 0,
+            "lastScan": 1790770583774,
+            "tourDone": true
+          },
+          {
+            "id": "u3cbe037822",
+            "elo": 1200,
+            "hist": [],
+            "name": "Anggota Demo 1",
+            "wins": 0,
+            "fresh": true,
+            "level": "Intermediate",
+            "rated": false,
+            "played": 0,
+            "lastScan": 1790770584410,
+            "tourDone": true
+          },
+          {
+            "id": "u6825938b56",
+            "elo": 1200,
+            "hist": [],
+            "name": "Anggota Demo 2",
+            "wins": 0,
+            "fresh": true,
+            "level": "Intermediate",
+            "rated": false,
+            "played": 0,
+            "lastScan": 1790770584410
+          },
+          {
+            "id": "uda8c0601c8",
+            "elo": 1200,
+            "hist": [],
+            "name": "Ketua Demo",
+            "wins": 0,
+            "fresh": true,
+            "level": "Intermediate",
+            "rated": false,
+            "played": 0,
+            "lastScan": 1790770584410,
+            "tourDone": true
+          },
+          {
+            "id": "u49u8er",
+            "age": 45,
+            "elo": 1150,
+            "lvl": "E",
+            "hist": [],
+            "name": "Daro",
+            "wins": 0,
+            "fresh": false,
+            "level": "Intermediate",
+            "noAcc": true,
+            "phone": "0811401479",
+            "rated": true,
+            "played": 0,
+            "lastScan": 1790933311821,
+            "ratingLog": [
+              {
+                "t": 1790954771716,
+                "by": "ade",
+                "to": 1150,
+                "from": 1200,
+                "reason": ""
+              }
+            ]
+          },
+          {
+            "id": "uosolz0",
+            "elo": 1200,
+            "hist": [],
+            "name": "Darman",
+            "wins": 0,
+            "fresh": true,
+            "level": "Intermediate",
+            "noAcc": true,
+            "phone": "0822475216683",
+            "rated": false,
+            "played": 0,
+            "lastScan": 1790954294111
+          },
+          {
+            "id": "u056f3247db",
+            "elo": 1200,
+            "hist": [],
+            "name": "Darmawan",
+            "wins": 0,
+            "fresh": true,
+            "level": "Intermediate",
+            "rated": false,
+            "played": 0,
+            "lastScan": 1790955367570,
+            "tourDone": true
+          },
+          {
+            "id": "uafb1e69017",
+            "elo": 1200,
+            "hist": [],
+            "name": "Sidrat",
+            "wins": 0,
+            "fresh": true,
+            "level": "Intermediate",
+            "rated": false,
+            "played": 0,
+            "lastScan": 1790957461559,
+            "tourDone": true
+          },
+          {
+            "id": "u8fb3c4376e",
+            "elo": 1200,
+            "hist": [],
+            "name": "Awan",
+            "wins": 0,
+            "fresh": true,
+            "level": "Intermediate",
+            "rated": false,
+            "played": 0,
+            "lastScan": 1790957696458,
+            "tourDone": true
+          }
+        ],
+        "blocks": {},
+        "notifs": [
+          {
+            "t": 1790954771716,
+            "id": "n9uv4ca",
+            "to": "u49u8er",
+            "link": {
+              "tab": "home",
+              "self": true
+            },
+            "read": false,
+            "text": "Pengelola GOR menempatkanmu di Kelompok D (ELO 1150)."
+          },
+          {
+            "t": 1790959310645,
+            "id": "nmx8aws",
+            "to": "uosolz0",
+            "link": {
+              "tab": "club"
+            },
+            "read": false,
+            "text": "Pb. 18 reborn dikenai nonaktif: Menunggak."
+          }
+        ],
+        "gallery": [],
+        "matches": [],
+        "reports": [],
+        "tabOpen": {
+          "turnamen": false
+        },
+        "auditLog": [
+          {
+            "t": 1790933311821,
+            "by": "ade",
+            "text": "Jadwal baru: Pb. 18 reboen, Lapangan 1 Senin 20:00, Rp 200.000 per jadwal."
+          },
+          {
+            "t": 1790953893084,
+            "by": "ade",
+            "text": "Jadwal diubah: Pb. 18 reboen, Lapangan 1, Senin 20:00, Rp 200.000 -> Pb. 18 reborn, Lapangan 1, Senin 20:00, Rp 200.000."
+          },
+          {
+            "t": 1790954143170,
+            "by": "ade",
+            "text": "Iuran lunas: Pb. 18 reborn, Lapangan 1, Senin 20:00 (Rp 200.000)."
+          },
+          {
+            "t": 1790954154897,
+            "by": "ade",
+            "text": "Jadwal diubah: Pb. 18 reborn, Lapangan 1, Senin 20:00, Rp 200.000 -> Pb. 18 reborn, Lapangan 1, Senin 20:00, Rp 200.000."
+          },
+          {
+            "t": 1790954294111,
+            "by": "ade",
+            "text": "Jadwal baru: Pb. 18 reborn, Lapangan 1 Sabtu 20:00."
+          },
+          {
+            "t": 1790954771716,
+            "by": "ade",
+            "text": "Penilaian: Daro -> Kelompok D, ELO 1150."
+          },
+          {
+            "t": 1790959078153,
+            "by": "ade",
+            "text": "Jadwal diubah: Pb. 18 reborn, Lapangan 1, Sabtu 20:00, tanpa iuran -> Pb. 18 reborn, Lapangan 1, Jumat 20:00, tanpa iuran."
+          },
+          {
+            "t": 1790959111149,
+            "by": "ade",
+            "text": "Jadwal diubah: Pb. 18 reborn, Lapangan 1, Jumat 20:00, tanpa iuran -> Pb. 18 reborn, Lapangan 1, Jumat 20:00, Rp 200.000."
+          },
+          {
+            "t": 1790959310645,
+            "by": "ade",
+            "text": "Sanksi nonaktif untuk Pb. 18 reborn: Menunggak."
+          }
+        ],
+        "payments": [],
+        "quotaLog": {
+          "Wed Sep 30 2026": 0
+        },
+        "tourneys": [],
+        "schedules": [],
+        "challenges": [],
+        "courtSched": [
+          {
+            "hp": "0811401479",
+            "id": "csdbnorx",
+            "day": 1,
+            "dur": 120,
+            "end": 1793030399999,
+            "fee": 200000,
+            "kind": "tetap",
+            "name": "Pb. 18 reborn",
+            "sesi": [
+              1791201600000,
+              1791806400000,
+              1792411200000,
+              1793016000000
+            ],
+            "time": "20:00",
+            "court": "Lapangan 1",
+            "ketua": "Daro",
+            "start": 1791201600000,
+            "paidAt": 1790954143170,
+            "paidPeriode": 1
+          },
+          {
+            "hp": "0822475216683",
+            "id": "cs95hdtb",
+            "day": 5,
+            "dur": 120,
+            "end": 1793375999999,
+            "fee": 200000,
+            "kind": "tetap",
+            "name": "Pb. 18 reborn",
+            "sesi": [
+              1791547200000,
+              1792152000000,
+              1792756800000,
+              1793361600000
+            ],
+            "time": "20:00",
+            "court": "Lapangan 1",
+            "ketua": "Darman",
+            "start": 1791547200000
+          }
+        ],
+        "adminClaimed": true,
+        "announcements": []
+      },
+      "version": "25",
+      "updated_at": "2026-10-02T16:41:52.615Z",
+      "updated_by": "ade"
+    }
+  ],
+  "streams": [],
+  "settings": [
+    {
+      "key": "admin_claimed",
+      "value": true
+    }
+  ]
+}
