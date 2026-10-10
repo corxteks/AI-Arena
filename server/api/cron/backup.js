@@ -1,14 +1,14 @@
 // Cadangan otomatis harian (dipanggil oleh Vercel Cron, lihat vercel.json).
 // Menyalin isi tabel penting sebagai satu berkas JSON, lalu menyimpannya ke repo GitHub
-// sendiri (folder backups/) lewat GitHub API. Tidak menyentuh data produksi sama sekali (read-only).
+// PRIVAT (folder backups/) lewat GitHub API. Tidak menyentuh data produksi sama sekali (read-only).
 import { query } from '../../src/db.js';
 
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET;
   if (secret && req.headers.authorization !== `Bearer ${secret}`) return res.status(401).json({ error: 'unauthorized' });
 
-  const token = process.env.GITHUB_TOKEN, repo = process.env.GITHUB_REPO;
-  if (!token || !repo) return res.status(500).json({ error: 'GITHUB_TOKEN/GITHUB_REPO belum diatur.' });
+  const token = process.env.BACKUP_TOKEN, repo = process.env.BACKUP_REPO;
+  if (!token || !repo) return res.status(500).json({ error: 'BACKUP_TOKEN/BACKUP_REPO belum diatur (repo cadangan harus privat).' });
 
   const tables = ['users', 'clubs', 'club_members', 'invites', 'app_state', 'streams', 'settings'];
   const dump = {};
