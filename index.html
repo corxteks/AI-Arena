@@ -4295,6 +4295,10 @@ function vModal(){
     const c=club(M.id),u=user(M.uid);if(!c||!u||!isAdmin()){ui.modal=null;return ''}
     h=`<h2>Pindahkan anggota</h2><p class="small muted">${esc(u.name)} dari ${esc(c.name)}</p><label for="mvTo">Pindah ke PB</label><select id="mvTo">${S.clubs.filter(x=>x.status==='approved'&&x.id!==c.id).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select>
     <div class="two rbtn"><button class="btn" data-act="moveDo" data-id="${c.id}" data-uid="${u.id}">Pindahkan</button><button class="btn ghost" data-act="closeModal">Batal</button></div>`;
+  }else if(M.type==='deleteUser'){
+    const u=user(M.uid);if(!u||!isAdmin()){ui.modal=null;return ''}
+    h=`<h2>Hapus akun ${esc(u.name)}?</h2><p class="small muted">Akun, kode masuk, dan keanggotaan PB dihapus permanen dan tidak bisa dikembalikan. Pemain yang sudah punya riwayat laga, obrolan, atau foto tidak bisa dihapus (pakai Keluarkan dari PB).</p>
+    <div class="two rbtn"><button class="btn danger" data-act="deleteUserDo" data-uid="${u.id}">Hapus akun</button><button class="btn ghost" data-act="closeModal">Batal</button></div>`;
   }else if(M.type==='kickMember'){
     const c=club(M.id),u=user(M.uid);if(!c||!u||!canLead(c)){ui.modal=null;return ''}
     h=`<h2>Keluarkan anggota</h2><p class="small muted">${esc(u.name)} akan dikeluarkan dari ${esc(c.name)} dan diberi tahu.</p><label for="kkWhy">Alasan (opsional)</label><input id="kkWhy" maxlength="80" placeholder="Contoh: pindah domisili">
@@ -4375,7 +4379,7 @@ function vModal(){
     h=`<h2>${esc(g.name)}</h2><p class="small muted">${habis?'<span class="chip bad">Berakhir</span> ':akhir?'<span class="chip warn">Minggu terakhir</span> ':''}${g.list.length>1?`<span class="chip warn">${g.list.length} jadwal</span> `:''}${ang.length} anggota${cl?`, ELO PB ${clubElo(cl)}`:''}</p>
     <p class="small" style="margin:2px 0 6px"><span class="muted">Ketua:</span> <b>${esc(ket)}</b>${(g.list.find(x=>x.hp)||{}).hp?' · <a href="tel:'+esc(g.list.find(x=>x.hp).hp)+'">'+esc(g.list.find(x=>x.hp).hp)+'</a>':''}</p>
     <div class="small muted dlab">Jadwal</div>${g.list.slice().sort((x,y)=>x.day-y.day||timeMin(x.time)-timeMin(y.time)).map(x=>`<div class="row"><div class="jr"><b>${HARI[x.day]} ${esc(x.time)}</b><span>${esc(x.court)}</span>${x.fee?`<span class="small muted">${rp(x.fee)}</span>${payChip(x)}`:''}<span class="small muted">${sdate(x.start)}–${sdate(x.end)}${x.end<Date.now()?' (berakhir)':''}</span></div><button class="btn xs danger" data-act="delCourtSched" data-id="${x.id}">Hapus</button></div>`).join('')}
-    <div class="small muted dlab">Anggota</div>${ang.length?`<div class="agrid">${ang.map(u=>`<div class="ag">${avatar(u.id,'sm')}<span>${esc(u.name)}${cl.leaderId===u.id?' <i class="chip ok">K</i>':''}</span>${cl.leaderId!==u.id?`<button class="btn xs danger" data-act="openModal" data-m="kickMember" data-id="${cl.id}" data-uid="${u.id}">Keluarkan</button>`:''}</div>`).join('')}</div>`:'<p class="muted small">Belum ada anggota terdaftar.</p>'}
+    <div class="small muted dlab">Anggota</div>${ang.length?`<div class="agrid">${ang.map(u=>`<div class="ag">${avatar(u.id,'sm')}<span>${esc(u.name)}${cl.leaderId===u.id?' <i class="chip ok">K</i>':''}</span>${cl.leaderId!==u.id?`<button class="btn xs danger" data-act="openModal" data-m="kickMember" data-id="${cl.id}" data-uid="${u.id}">Keluarkan</button><button class="btn xs ghost" data-act="openModal" data-m="deleteUser" data-uid="${u.id}">Hapus akun</button>`:''}</div>`).join('')}</div>`:'<p class="muted small">Belum ada anggota terdaftar.</p>'}
     <div class="two rbtn">${cl?`<button class="btn" data-act="openRoom" data-id="club:${cl.id}">Buka lounge</button>`:'<span></span>'}<button class="btn ghost" data-act="closeModal">Tutup</button></div>`;
   }else if(M.type==='rate'){
     const u=user(M.id),g=skillOf(u.elo),log=(u.ratingLog||[]).slice(-3).reverse(),pb=clubsOf(u.id)[0];
@@ -5017,6 +5021,12 @@ const A={
   tourSkip(){me().tourDone=true;ui.modal=null;commit()},
   tourFinish(){me().tourDone=true;ui.modal=null;commit()},
   loginAdmin(){const a=S.users.find(x=>x.role==='superadmin');if(!a)return;setMe(a.id);ui={...ui,tab:'home',view:null,modal:null};commit('Selamat datang kembali, '+a.name+'.')},
+  async deleteUserDo(d){if(!isAdmin())return;const u=user(d.uid);if(!u||u.role)return;
+    const used=JSON.stringify([S.matches,S.challenges,S.tourneys||[],S.leagues||[],S.chats,S.gallery]).includes('"'+u.id+'"');
+    if(used){ui.modal=null;render();return toast('Pemain ini punya riwayat laga/obrolan/foto, jadi tidak bisa dihapus. Gunakan Keluarkan dari PB.')}
+    try{if(API_BASE)await apiCall('DELETE','/api/users/'+u.id);
+      S.users=S.users.filter(x=>x.id!==u.id);S.clubs.forEach(c=>{c.members=(c.members||[]).filter(x=>x!==u.id);c.requests=(c.requests||[]).filter(x=>x!==u.id)});
+      logAct(`Akun dihapus: ${u.name}.`);ui.modal=null;commit(u.name+' dihapus.')}catch(e){toast(e.message)}},
   sendIssue(){const t=val('rpTxt').trim();if(t.length<5)return toast('Tulis laporan minimal 5 huruf.');notify(admins(),`Laporan dari ${first(ME)}: ${t.slice(0,300)}`,{tab:'home'});ui.modal=null;commit('Laporan terkirim ke pengelola GOR.')},
   async setAdminPw(){const p1=val('apw1'),p2=val('apw2');if(p1.length<8)return toast('Kata sandi minimal 8 karakter.');if(p1!==p2)return toast('Kata sandi dan ulangannya tidak sama.');
     try{await apiCall('POST','/api/auth/set-admin-password',{password:p1});ui.modal=null;commit('Kata sandi pengelola disimpan.')}catch(e){toast(e.message)}},

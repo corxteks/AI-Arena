@@ -239,6 +239,21 @@ export async function kickMember(user, clubId, targetId, reason = '') {
   });
 }
 
+/** Hapus akun pemain sepenuhnya. Hanya Super User; tidak untuk ketua PB aktif atau Super User. */
+export async function deleteUser(user, targetId) {
+  if (user.role !== 'superadmin') throw new HttpError(403, 'Hanya Super User.');
+  return tx(async db => {
+    const t = (await db.query('SELECT * FROM users WHERE id=$1 FOR UPDATE', [targetId])).rows[0];
+    if (!t || t.role === 'superadmin') throw new HttpError(404, 'Akun tidak ditemukan.');
+    const lead = await db.query('SELECT name FROM clubs WHERE leader_id=$1 LIMIT 1', [targetId]);
+    if (lead.rowCount) throw new HttpError(409, `Akun ini ketua ${lead.rows[0].name}. Ganti ketua dulu.`);
+    await db.query('UPDATE streams SET created_by=NULL WHERE created_by=$1', [targetId]);
+    await db.query('DELETE FROM users WHERE id=$1', [targetId]);
+    await db.query(`INSERT INTO audit_log (actor_id,action,detail) VALUES ($1,'user_delete',$2)`, [user.id, { user: targetId, name: t.name }]);
+    return { userId: targetId };
+  });
+}
+
 /** Pindahkan anggota ke PB lain yang sudah disetujui. Hanya Super User. */
 export async function moveMember(user, clubId, targetId, toClubId) {
   if (user.role !== 'superadmin') throw new HttpError(403, 'Hanya Super User.');

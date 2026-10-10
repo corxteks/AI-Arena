@@ -479,3 +479,19 @@ test('YouTube: token disimpan terenkripsi', async () => {
 test('YouTube: callback OAuth menolak state palsu', async () => {
   assert.equal((await fetch(`${url}/api/youtube/oauth/callback?state=palsu&code=x`)).status, 400);
 });
+
+test('hapus akun: hanya Super User, ketua PB tidak bisa dihapus, anggota hilang dari PB', async () => {
+  const adminToken = await setup();
+  const A = await makeClub(adminToken, 'PB Satu');
+  const add = await api('POST', `/api/clubs/${A.clubId}/members`, { name: 'Sari' }, A.leaderToken);
+  const login = await api('POST', '/api/auth/login', { code: add.body.code });
+  const uid = login.body.user.id;
+  assert.equal((await api('DELETE', `/api/users/${uid}`, undefined, A.leaderToken)).status, 403);
+  const me = await api('GET', '/api/me', undefined, A.leaderToken);
+  assert.equal((await api('DELETE', `/api/users/${me.body.user.id}`, undefined, adminToken)).status, 409);
+  assert.equal((await api('DELETE', `/api/users/${uid}`, undefined, adminToken)).status, 200);
+  assert.equal((await api('GET', '/api/me', undefined, login.body.token)).status, 401);
+  const club = (await api('GET', '/api/clubs', undefined, adminToken)).body.clubs[0];
+  assert.ok(!club.members.some(m => m.id === uid));
+  assert.equal((await api('DELETE', `/api/users/${uid}`, undefined, adminToken)).status, 404);
+});
