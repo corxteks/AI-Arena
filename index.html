@@ -2445,6 +2445,7 @@ body .row:has(>.h2hb)>.linkbtn .chip{font-size:10px!important;padding:1px 6px!im
 <script>
 /* ===== Mode server: aktif bila alamat API diketahui (?api=..., tersimpan, atau server lokal di port 3000) ===== */
 const PROD_API='https://ai-arena-lovat.vercel.app';
+const PUBLIC_LIVE=/[?&]live(=|&|$)/.test(location.search)||location.hash==='#live';
 const API_BASE=(()=>{try{
   const q=new URLSearchParams(location.search).get('api');
   if(q==='off'){localStorage.removeItem('ai-arena-api');return ''}
@@ -2496,8 +2497,8 @@ function applyEloWith(m,users,t){
   const upd=(team,opp,score)=>team.forEach(id=>{const u=get(id);if(!u.hist.length)u.hist.push({t:t-H,e:u.elo});
     const E=1/(1+Math.pow(10,(opp.reduce((s,x)=>s+pre[x],0)/opp.length-effRating(elo,id,team))/400));
     const K=u.played<(u.rated?PROV_RATED:PROVISIONAL)?48:32, d=Math.round(K*(score-E));
-    u.elo+=d;u.played++;if(score)u.wins++;u.hist.push({t,e:u.elo});m.deltas[id]=d;m.exp[id]=Math.round(E*100)});
-  upd(m.teamA,m.teamB,w==='a'?1:0);upd(m.teamB,m.teamA,w==='b'?1:0);
+    u.elo+=d;u.played++;if(score===1)u.wins++;u.hist.push({t,e:u.elo});m.deltas[id]=d;m.exp[id]=Math.round(E*100)});
+  upd(m.teamA,m.teamB,m.draw?.5:w==='a'?1:0);upd(m.teamB,m.teamA,m.draw?.5:w==='b'?1:0);
 }
 function genGames(aWins,rnd){
   const g=w=>{if(rnd()<.15){const hi=22+Math.floor(rnd()*5);return w?[hi,hi-2]:[hi-2,hi]}const lo=8+Math.floor(rnd()*12);return w?[21,lo]:[lo,21]};
@@ -2577,6 +2578,7 @@ function vLogin(){ensureCodes();let ex=[];
   <button class="btn full" data-act="loginCode">Masuk</button><p class="small lg-err" id="lgErr" role="alert"></p></div>
   ${API_BASE?(ui.lgAdmin?`<div class="panel lg-box" style="margin-top:10px"><label for="lgAPass">Kata sandi pengelola GOR</label><input id="lgAPass" class="lg-t" type="password" autocomplete="current-password" maxlength="100"><button class="btn full" data-act="srvLoginAdmin">Masuk</button><button class="btn ghost full" data-act="lgAdminBack">Batal</button></div>`:`<button class="btn ghost full" style="margin-top:10px" data-act="lgAdmin">Masuk sebagai pengelola GOR</button>`):(()=>{const a=S.users.find(x=>x.role==='superadmin');return a?`<button class="btn ghost full" style="margin-top:10px" data-act="loginAdmin">Masuk sebagai Pengelola GOR (${esc(a.name)})</button>`:''})()}
   ${ui.lgReg==='form'?`<div class="panel lg-box lg-reg"><h2>Ajukan PB baru</h2><label for="lgKN">Nama ketua</label><input id="lgKN" class="lg-t" maxlength="40" autocomplete="off"><label for="lgHp">Nomor HP ketua</label><input id="lgHp" class="lg-t" type="tel" inputmode="tel" maxlength="16" placeholder="081234567890"><label for="lgPB">Nama PB</label><input id="lgPB" class="lg-t" maxlength="40" autocomplete="off"><label for="lgAng">Nama anggota (satu nama per baris, opsional)</label><textarea id="lgAng" class="lg-t" rows="4" maxlength="800" placeholder="Budi&#10;Citra&#10;Dewi"></textarea><button class="btn full" data-act="lgRegister">Kirim pendaftaran</button><button class="btn ghost full" data-act="lgRegBack">Batal</button></div>`:ui.lgReg==='done'?`<div class="panel lg-box"><h2>Pendaftaran terkirim</h2><p class="small">PB <b>${esc((ui.lgRegInfo||{}).pb||'')}</b> menunggu konfirmasi pengelola GOR (Super User). Setelah disetujui, kamu akan menerima <b>kode masuk</b> dari pengelola. Masukkan kode itu di sini untuk masuk sebagai ketua.</p><button class="btn full" data-act="lgRegBack">Kembali</button></div>`:`<button class="btn ghost full lg-regbtn" data-act="lgReg">Ajukan PB baru</button>`}
+  ${API_BASE?`<p style="text-align:center;margin:10px 0 0"><a class="btn ghost" href="${location.pathname}?live">Lihat skor langsung (tanpa masuk)</a></p>`:''}
   ${API_BASE&&!SRV.demo?`<div class="panel lg-demo small muted" style="text-align:center">Memuat kode demo…</div>`:''}
   ${ex.length?`<details class="panel lg-demo" open><summary><b>${API_BASE?'Coba sebagai pengunjung':'Kode contoh untuk mencoba'}</b></summary>${ex.map(x=>`<div class="row"><div class="grow"><b>${esc(x[0])}</b></div><button class="chip codechip" data-act="fillCode" data-c="${esc(x[1])}">${esc(x[1])}</button></div>`).join('')}<p class="small muted" style="margin:6px 0 0">Ketuk kode untuk mengisinya otomatis${API_BASE?', lalu tekan Masuk. Kode demo ini bisa dipakai berkali-kali.':'.'}</p></details>`:''}</main>`}
 const UI_KEY='ai-arena-ui-v1';
@@ -2648,7 +2650,8 @@ const findClash=(entry,excludeId)=>S.courtSched.find(x=>x.kind==='tetap'&&x.id!=
 const courtSchedClash=(entry,excludeId)=>!!findClash(entry,excludeId);
 const clashMsg=(x,e)=>`${e.court} hari ${HARI[e.day]} sudah terisi ${x.name} (${x.time}). Satu lapangan hanya punya satu jadwal per hari, pilih hari atau lapangan lain.`;
 const winner=winnerOf;
-const loserIds=m=>{const w=winner(m);return w==='a'?m.teamB:w==='b'?m.teamA:[]};
+const isDraw=m=>!!m.draw;
+const loserIds=m=>{if(isDraw(m))return m.teamB;const w=winner(m);return w==='a'?m.teamB:w==='b'?m.teamA:[]};
 const winnerIds=m=>{const w=winner(m);return w==='a'?m.teamA:w==='b'?m.teamB:[]};
 const players=m=>[...m.teamA,...m.teamB];
 function quota(){const d=new Date().toDateString();if(S.quota.date!==d){(S.quotaLog=S.quotaLog||{})[S.quota.date]=S.quota.used;S.quota={date:d,used:0}}return S.quota}
@@ -2757,7 +2760,7 @@ const svg=(k,cls='')=>`<svg class="${cls}" viewBox="0 0 24 24" fill="none" strok
 
 /* ---------- components ---------- */
 function statusChip(m){
-  return {cancelled:'<span class="chip bad">Dibatalkan</span>',wo:'<span class="chip warn">WO</span>',scheduled:'<span class="chip">Terjadwal</span>',playing:'<span class="chip warn">Berlangsung</span>',pending:'<span class="chip warn">Menunggu verifikasi</span>',verified:'<span class="chip ok">Sah</span>',disputed:'<span class="chip bad">Ditolak</span>'}[m.status];
+  return {cancelled:'<span class="chip bad">Dibatalkan</span>',wo:'<span class="chip warn">WO</span>',scheduled:'<span class="chip">Terjadwal</span>',playing:'<span class="chip warn">Berlangsung</span>',pending:m.draw?'<span class="chip warn">Seri, menunggu verifikasi</span>':'<span class="chip warn">Menunggu verifikasi</span>',verified:m.draw?'<span class="chip ok">Seri, sah</span>':'<span class="chip ok">Sah</span>',disputed:'<span class="chip bad">Ditolak</span>'}[m.status];
 }
 function deltaText(m){if(!m.deltas)return '';return players(m).map(id=>`${first(id)} ${m.deltas[id]>=0?'+':'−'}${Math.abs(m.deltas[id])}`).join(', ')}
 function cardDetail(m){
@@ -2912,7 +2915,7 @@ const avatar=(id,size='',zoom=false)=>{const u=user(id);const i=[...(u?.id||'x')
 function spark(hist){const h=hist.slice(-14);if(h.length<2)return '';const es=h.map(x=>x.e),mn=Math.min(...es),mx=Math.max(...es),W=130,Hh=50;
   const pts=h.map((x,i)=>[(i/(h.length-1)*(W-10)+5).toFixed(1),(Hh-6-(x.e-mn)/((mx-mn)||1)*(Hh-14)).toFixed(1)]);
   const l=pts[pts.length-1];return `<svg class="spark" viewBox="0 0 ${W} ${Hh}" aria-hidden="true"><polyline points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/><circle cx="${l[0]}" cy="${l[1]}" r="5" fill="#FFC23D" stroke="#fff" stroke-width="2"/></svg>`}
-function streakOf(id){const ms=S.matches.filter(m=>m.status==='verified'&&players(m).includes(id)).sort((a,b)=>b.t-a.t);let n=0,w=null;for(const m of ms){const r=winnerIds(m).includes(id);if(w===null)w=r;if(r===w)n++;else break}return ms.length?`${n}${w?'M':'K'}`:'—'}
+function streakOf(id){const ms=S.matches.filter(m=>m.status==='verified'&&!m.draw&&players(m).includes(id)).sort((a,b)=>b.t-a.t);let n=0,w=null;for(const m of ms){const r=winnerIds(m).includes(id);if(w===null)w=r;if(r===w)n++;else break}return ms.length?`${n}${w?'M':'K'}`:'—'}
 const banner=(n,title,sub='')=>`<section class="ptitle"><h1>${title}</h1>${sub?`<p>${sub}</p>`:''}</section>`;
 const ib=(k,c='')=>`<span class="ib ${c}">${svg(k)}</span>`;
 const back=()=>`<button class="btn sm ghost back" data-act="closeView">Kembali</button>`;
@@ -3109,7 +3112,7 @@ function vMatches(){
   const F=ui.lF||'all',fl=m=>F==='all'||(F==='live'&&m.status==='playing')||(F==='sched'&&m.status==='scheduled')||(F==='wait'&&['pending','disputed'].includes(m.status))||(F==='turnamen'&&(m.tourneyId||m.leagueId))||(F==='latihan'&&m.friendly&&!m.tourneyId),msf=ms.filter(fl),
     fch=`<div class="fchips" role="group" aria-label="Saring laga">${[['all','Semua'],['live','Berlangsung'],['sched','Terjadwal'],['wait','Menunggu'],['turnamen','Turnamen'],['latihan','Latihan']].map(x=>`<button class="fchip" aria-pressed="${F===x[0]}" data-act="lFilter" data-v="${x[0]}">${x[1]}</button>`).join('')}</div>`;
   const grp=(t,list)=>list.length?`<section class="sec"><h2>${t}</h2>${list.map(mcard).join('')}</section>`:'';
-  const stat=cs.length&&(isAdmin()||leaderClubs().length)?`<details class="panel elo-info"><summary><b>Statistik klub</b></summary>${cs.map(c=>{const cms=S.matches.filter(m=>m.status==='verified'&&m.clubId===c.id&&!m.friendly);const st={w:0,l:0};cms.forEach(m=>{const w=winnerIds(m).some(id=>m.teamA.includes(id));st.w+=w?1:0;st.l+=w?0:1});const avgElo=c.members.length?Math.round(c.members.map(user).reduce((t,u)=>t+u.elo,0)/c.members.length):0;return `<div class="row"><div class="grow"><b>${esc(c.name)}</b></div><span class="small muted">${c.members.length} anggota, ELO rata ${avgElo}, ${st.w} menang, ${st.l} kalah</span></div>`}).join('')}</details>`:'';
+  const stat=cs.length&&(isAdmin()||leaderClubs().length)?`<details class="panel elo-info"><summary><b>Statistik klub</b></summary>${cs.map(c=>{const cms=S.matches.filter(m=>m.status==='verified'&&m.clubId===c.id&&!m.friendly);const st={w:0,l:0};cms.forEach(m=>{if(m.draw)return;const w=winnerIds(m).some(id=>m.teamA.includes(id));st.w+=w?1:0;st.l+=w?0:1});const avgElo=c.members.length?Math.round(c.members.map(user).reduce((t,u)=>t+u.elo,0)/c.members.length):0;return `<div class="row"><div class="grow"><b>${esc(c.name)}</b></div><span class="small muted">${c.members.length} anggota, ELO rata ${avgElo}, ${st.w} menang, ${st.l} kalah</span></div>`}).join('')}</details>`:'';
   return `${banner(3,'Tanding','Jadwal, hasil, dan analisis laga')}${tabs}
   <div class="actions mact">${led.length?`<button class="btn sm" data-act="openModal" data-m="match">Buat pertandingan</button>`:''}${!me().role?`<button class="btn sm ghost" data-act="openModal" data-m="findOpp">Cari lawan seimbang</button>`:''}</div>
   ${vMyNext()}${vCourtBoard(ms)}${fch}${stat}
@@ -3676,9 +3679,9 @@ const annVisible=(a,cs)=>(!a.at||a.sent)&&(!a.to||a.to==='all'||(cs||[]).some(c=
 const annSort=l=>l.slice().sort((a,b)=>(b.pin?1:0)-(a.pin?1:0)||b.t-a.t);
 function vCourtStrip(){return `<div class="hm-strip" aria-label="Kondisi lapangan">${COURTS.map(c=>{const pl=S.matches.find(m=>m.court===c&&m.status==='playing');return `<span class="hm-dot ${pl?'on':'off'}"></span><span class="hm-cn">${c.replace('Lapangan ','Lap. ')} ${pl?'dipakai':'kosong'}</span>`}).join('')}</div>`}
 function vMemberLive(){
-  const live=S.matches.filter(m=>m.status==='playing'&&m.stream&&!m.stream.ended),now=Date.now();
-  return `${banner(4,'Siaran','Tonton pertandingan yang sedang berlangsung')}
-  <section class="sec">${live.length?live.map(m=>`<article class="panel livecard"><div class="lh"><span class="chip live">LIVE</span><b>${esc(m.court)}</b><span class="small muted">${durTxt(now-m.stream.started)}</span></div><div class="lscore"><b>${esc(names(m.teamA))}</b> <span class="vs">vs</span> <b>${esc(names(m.teamB))}</b></div>${m.cur?`<div class="small muted">Skor ${m.cur.a}–${m.cur.b}</div>`:''}<div class="lacts"><button class="btn xs cork" data-act="watch" data-id="${m.id}">Tonton</button></div></article>`).join(''):'<div class="panel"><p class="muted small" style="margin:6px 0">Belum ada siaran langsung saat ini.</p></div>'}</section>`;
+  const live=S.matches.filter(m=>m.status==='playing'),now=Date.now();
+  return `${banner(4,'Siaran','Skor langsung dan siaran pertandingan')}
+  <section class="sec">${live.length?live.map(m=>`<article class="panel livecard"><div class="lh"><span class="chip live">LIVE</span><b>${esc(m.court)}</b><span class="small muted">${durTxt(now-(m.stream&&m.stream.started||m.startedAt||m.t))}</span></div><div class="lscore"><b>${esc(names(m.teamA))}</b> <span class="vs">vs</span> <b>${esc(names(m.teamB))}</b></div>${m.cur?`<div class="small muted">Skor ${m.cur.a}–${m.cur.b}${m.games.length?' (gim: '+m.games.map(g=>g.join('–')).join(', ')+')':''}</div>`:''}${m.stream&&!m.stream.ended?`<div class="lacts"><button class="btn xs cork" data-act="watch" data-id="${m.id}">Tonton</button></div>`:'<div class="small muted">Tanpa video, skor diperbarui otomatis.</div>'}</article>`).join(''):'<div class="panel"><p class="muted small" style="margin:6px 0">Belum ada siaran langsung saat ini.</p></div>'}</section>`;
 }
 function vAkun(){
   const u=me();
@@ -3940,7 +3943,8 @@ function vUmpire(){
     const pc=id=>{if(!id)return '';const role=si&&si.server===id?'srv':si&&si.receiver===id?'rcv':'';return `<span class="uplayer ${role}${swp?' swp':''}"><i aria-hidden="true">${role==='srv'?shuttle:''}</i><b>${esc(first(id))}</b><small>${role==='srv'?'Servis':role==='rcv'?'Terima':'&nbsp;'}</small></span>`};
     return `<button class="zone ${s} ${serving?'serving':''}" data-act="point" data-side="${s}" ${w||start?'disabled':''} aria-label="Tambah poin untuk ${esc(names(ids))}"><span class="zgames">${gamesWon(m,s)} gim</span><span class="zscore" data-sk="z${m.id}${s}">${sc}</span><span class="zcourt">${ids.length>1?`<span class="zc"><em>Kiri</em>${pc(pos.L)}</span><span class="zc"><em>Kanan</em>${pc(pos.R)}</span>`:`<span class="zc one">${pc(pos.R)}</span>`}</span></button>`};
   let status;
-  if(w)status=`Pertandingan selesai. ${esc(names(w==='a'?m.teamA:m.teamB))} menang ${gamesWon(m,w)}–${gamesWon(m,w==='a'?'b':'a')}.`;
+  if(m.draw)status='Pertandingan berakhir seri.';
+  else if(w)status=`Pertandingan selesai. ${esc(names(w==='a'?m.teamA:m.teamB))} menang ${gamesWon(m,w)}–${gamesWon(m,w==='a'?'b':'a')}.`;
   else if(c.a===29&&c.b===29)status='29–29: poin berikutnya menentukan gim';
   else if(c.a>=20&&c.b>=20)status='Deuce: butuh selisih 2 poin, maksimal 30';
   else status='';
@@ -3957,7 +3961,7 @@ function vUmpire(){
     <div class="gchips">${m.games.map((g,i)=>`<span aria-label="Gim ${i+1}">${g[0]}–${g[1]}</span>`).join('')}</div>${status?`<div class="ustatus" aria-live="polite">${status}</div>`:''}
     ${setup}
     <div class="zones">${m.flip?side('b')+side('a'):side('a')+side('b')}</div>
-    <div class="ufoot"><button class="ubtn" data-act="undo" ${m.undo?'':'disabled'}>Undo</button>${swapBtn}<button class="ubtn go" data-act="submitScore" ${w?'':'disabled'}>Kirim skor untuk verifikasi</button></div></div>`;
+    <div class="ufoot"><button class="ubtn" data-act="undo" ${m.undo?'':'disabled'}>Undo</button>${swapBtn}${w||m.draw||m.tourneyId||m.leagueId?'':`<button class="ubtn" data-act="endDraw" title="Akhiri pertandingan dengan hasil seri">Akhiri seri</button>`}<button class="ubtn go" data-act="submitScore" ${w||m.draw?'':'disabled'}>Kirim skor untuk verifikasi</button></div></div>`;
 }
 
 /* ---------- modal ---------- */
@@ -4039,11 +4043,12 @@ function vModal(){
     const cid=M.clubId||led[0].id,fmt=M.fmt||'double',mem=club(cid).members.map(user).filter(Boolean),now=new Date(Date.now()+36e5);
     const opt=()=>`<option value="">Pilih</option>`+mem.map(x=>`<option value="${x.id}">${esc(x.name)} (${x.elo})</option>`).join('');
     const uopt=`<option value="">Pilih</option>`+S.users.filter(x=>!x.role&&!x.guest&&clubsOf(x.id).length).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('');
+    const optAll=`<option value="">Pilih</option>`+S.users.filter(x=>!x.role&&!x.guest&&clubsOf(x.id).length).sort((p,q)=>p.name.localeCompare(q.name)).map(x=>`<option value="${x.id}">${esc(x.name)} (${x.elo}) · ${esc((clubsOf(x.id)[0]||{}).name||'')}</option>`).join('');
     const pad=n=>String(n).padStart(2,'0'),dv=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:00`;
     h=`<h2>Buat pertandingan</h2>${led.length>1?`<label for="mClub">Member</label><select id="mClub" data-change="mClub">${led.map(c=>`<option value="${c.id}" ${c.id===cid?'selected':''}>${esc(c.name)}</option>`).join('')}</select>`:''}
     <div class="two"><div><label for="mFmt">Format</label><select id="mFmt" data-change="mFmt"><option value="double" ${fmt==='double'?'selected':''}>Ganda</option><option value="single" ${fmt==='single'?'selected':''}>Tunggal</option></select></div><div><label for="mWhen">Waktu main</label><input id="mWhen" type="datetime-local" value="${dv}"></div></div>
     <div class="two"><div><label for="a1">${fmt==='single'?'Pemain A':'Pasangan A'}</label><select id="a1">${opt()}</select>${fmt==='single'?'':`<select id="a2" style="margin-top:6px" aria-label="Pasangan A pemain 2">${opt()}</select>`}</div>
-    <div><label for="b1">${fmt==='single'?'Pemain B':'Pasangan B'}</label><select id="b1">${opt()}</select>${fmt==='single'?'':`<select id="b2" style="margin-top:6px" aria-label="Pasangan B pemain 2">${opt()}</select>`}</div></div>
+    <div><label for="b1">${fmt==='single'?'Pemain B':'Pasangan B'}</label><select id="b1">${optAll}</select>${fmt==='single'?'':`<select id="b2" style="margin-top:6px" aria-label="Pasangan B pemain 2">${optAll}</select>`}<p class="small muted" style="margin:4px 0 0">Lawan boleh dari PB mana pun.</p></div></div>
     <div class="two"><div><label for="ump">Wasit</label><select id="ump">${uopt}</select></div><div><label for="mCourt">Lapangan</label><select id="mCourt">${COURTS.map(c=>`<option ${c===club(cid).court?'selected':''}>${c}</option>`).join('')}</select></div></div>
     <label class="ck"><input type="checkbox" id="mFr"> Latihan (sparring): skor tercatat, ELO tidak berubah</label>
     <div class="two rbtn"><button class="btn" data-act="createMatch" data-cid="${cid}">Buat pertandingan</button><button class="btn ghost" data-act="askCancel">Batal</button></div>`;
@@ -4547,7 +4552,7 @@ function demoNote(){return `<div class="demo">Mode prototipe: data demo sudah di
 
 /* ---------- render ---------- */
 function applyBg(){document.body.classList.add('has-photo')}
-function render(preserve){applyBg();ESTC={};{const vk=[ui.tab,ui.view,ui.mTab,ui.chatT,ui.room,ui.tourId,ui.courtPage,ui.cpId,ui.matchId].join('|');document.documentElement.toggleAttribute('data-rf',!!preserve||vk===window.__vk);window.__vk=vk}
+function render(preserve){if(PUBLIC_LIVE){pubRender();return}applyBg();ESTC={};{const vk=[ui.tab,ui.view,ui.mTab,ui.chatT,ui.room,ui.tourId,ui.courtPage,ui.cpId,ui.matchId].join('|');document.documentElement.toggleAttribute('data-rf',!!preserve||vk===window.__vk);window.__vk=vk}
   const keep=preserve?[...document.querySelectorAll('input[id]:not([type=file]),textarea[id],select[id]')].map(e=>[e.id,e.type==='checkbox'?e.checked:e.value]):[];
   const focus=preserve&&document.activeElement?document.activeElement.id:null;
   tick();saveUi();
@@ -5068,12 +5073,16 @@ const A={
   uFirst(d){const m=match(ui.matchId),c=m&&m.cur;if(!c||c.a+c.b!==0||m.games.length)return;c.server=d.side;c.srv=c.pos[d.side].R;commit()},
   uFlip(){const m=match(ui.matchId);if(!m||!m.cur)return;m.flip=!m.flip;const g=m.games.length;if(g===2&&Math.max(m.cur.a,m.cur.b)===11)m.swapMid=true;else m.swapAt=g;commit('Sisi lapangan ditukar.')},
   undo(){const m=match(ui.matchId);if(!m.undo)return;const p=JSON.parse(m.undo);m.cur=p.cur;m.games=p.games;m.undo=null;logSnap(m);commit('Poin terakhir dibatalkan.')},
-  submitScore(){const m=match(ui.matchId);if(!winner(m))return;m.status='pending';m.undo=null;m.t=Date.now();m.submittedAt=Date.now();
+  endDraw(){const m=match(ui.matchId);if(!m||winner(m)||m.draw||m.tourneyId||m.leagueId)return;if(m.umpireId!==ME&&!isAdmin())return;
+    if(!confirm('Akhiri pertandingan dengan hasil seri? Skor yang sudah ada tetap dicatat.'))return;
+    const c=m.cur;if(c&&c.a+c.b>0)m.games.push([c.a,c.b]);if(!m.games.length)return toast('Belum ada poin. Mainkan dulu atau batalkan pertandingan.');
+    m.cur=null;m.draw=true;commit('Pertandingan diakhiri seri. Tekan Kirim skor untuk verifikasi.')},
+  submitScore(){const m=match(ui.matchId);if(!winner(m)&&!m.draw)return;m.status='pending';m.undo=null;m.t=Date.now();m.submittedAt=Date.now();
     if(m.stream&&!m.stream.ended){m.stream.ended=true;m.stream.endedAt=Date.now();quota().used+=END_COST}
-    notify(loserIds(m),`Verifikasi skor ${names(m.teamA)} vs ${names(m.teamB)} (${m.games.map(g=>g.join('–')).join(', ')}). Otomatis sah dalam 24 jam jika tidak ditolak.`,{tab:'match'});
+    notify(loserIds(m),`Verifikasi skor ${names(m.teamA)} vs ${names(m.teamB)} (${m.draw?'seri, ':''}${m.games.map(g=>g.join('–')).join(', ')}). Otomatis sah dalam 24 jam jika tidak ditolak.`,{tab:'match'});
     ui.view=null;ui.tab='match';commit('Skor terkirim. Menunggu verifikasi dari '+names(loserIds(m))+'.')},
   verify(d){const m=match(d.id);if(!loserIds(m).includes(ME))return;applyElo(m);m.status='verified';m.verifiedBy=ME;
-    notify(winnerIds(m),`Skor ${names(m.teamA)} vs ${names(m.teamB)} sudah diverifikasi. ELO diperbarui.`,{view:'profile',id:winnerIds(m)[0]});commit('Skor sah. ELO diperbarui: '+deltaText(m)+'.')},
+    notify(m.draw?m.teamA:winnerIds(m),`Skor ${names(m.teamA)} vs ${names(m.teamB)} (${m.draw?'seri':'menang'}) sudah diverifikasi. ELO diperbarui.`,{view:'profile',id:(m.draw?m.teamA:winnerIds(m))[0]});commit('Skor sah. ELO diperbarui: '+deltaText(m)+'.')},
   goLive(d){const q=quota();if(q.used+LIVE_COST+END_COST>QUOTA_LIMIT)return toast('Kuota YouTube API hari ini tidak cukup. Coba lagi besok.');
     ui.modal={type:'golive',id:d.id,step:0};render();
     const step=()=>{if(!ui.modal||ui.modal.type!=='golive')return;ui.modal.step++;
@@ -5315,6 +5324,22 @@ async function apiCall(method,path,body,noAuth){
   const j=await r.json().catch(()=>({}));
   if(!r.ok){const e=new Error(j.error||('Server '+r.status));e.status=r.status;throw e}
   return j}
+
+/* ---------- papan skor publik (tanpa login) ---------- */
+const PUB={matches:null,err:'',at:0};
+function vPublicLive(){
+  const ms=PUB.matches,live=(ms||[]).filter(m=>m.status==='playing'),done=(ms||[]).filter(m=>m.status!=='playing');
+  const gw=(m,k)=>m.games.filter(g=>k==='a'?g[0]>g[1]:g[1]>g[0]).length;
+  const card=m=>{const L=m.status==='playing';return `<article class="panel livecard"><div class="lh">${L?'<span class="chip live">LIVE</span>':`<span class="chip ok">${m.draw?'Seri':'Selesai'}</span>`}<b>${esc(m.court||'')}</b><span class="small muted">${esc(m.club||'')}</span></div>
+    ${['a','b'].map(k=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:4px 0"><span style="font-weight:600">${esc(m[k])}</span><b class="num" style="font-size:24px">${L&&m.cur?m.cur[k]:m.draw&&m.games.length?m.games[m.games.length-1][k==='a'?0:1]:gw(m,k)}</b></div>`).join('')}
+    ${m.games.length?`<div class="small muted">Gim: ${m.games.map(g=>g.join('–')).join(', ')}${L&&m.cur?` · gim berjalan ${m.cur.a}–${m.cur.b}`:''}</div>`:''}</article>`};
+  const body=PUB.err?`<div class="panel"><p class="small" style="margin:6px 0">${esc(PUB.err)}</p></div>`:ms===null?'<div class="panel"><p class="muted small" style="margin:6px 0">Memuat skor…</p></div>':
+    `<section class="sec"><h2>Sedang berlangsung</h2>${live.length?live.map(card).join(''):'<div class="panel"><p class="muted small" style="margin:6px 0">Belum ada pertandingan yang berlangsung.</p></div>'}</section>${done.length?`<section class="sec"><h2>Baru selesai</h2>${done.slice(0,10).map(card).join('')}</section>`:''}`;
+  return `<main class="shell enter loginp"><div class="lg-logo"><img src="${LOGO_SRC}" alt="AI Arena"></div><h1 class="lg-h">Skor langsung</h1><p class="small muted lg-p">${APP}. Terbuka untuk semua orang, tanpa perlu masuk. Diperbarui otomatis${PUB.at?' (terakhir '+new Date(PUB.at).toLocaleTimeString('id-ID')+')':''}.</p>${body}<p style="text-align:center;margin-top:14px"><a class="btn ghost" href="${location.pathname}">Buka aplikasi</a></p></main>`}
+function pubRender(){const a=document.getElementById('app');if(a)a.innerHTML=vPublicLive()}
+async function pubLoad(){try{const r=await apiCall('GET','/api/public/live',undefined,true);PUB.matches=r.matches||[];PUB.err='';PUB.at=Date.now()}catch(e){if(PUB.matches===null)PUB.err='Skor belum bisa dimuat. Coba lagi sebentar lagi.'}pubRender()}
+function startPublicLive(){if(!API_BASE){document.getElementById('app').innerHTML='<main class="shell enter"><h1 class="lg-h">Skor langsung</h1><p class="small muted lg-p">Skor langsung hanya tersedia saat tersambung ke server.</p></main>';return}
+  pubRender();pubLoad();setInterval(()=>{if(!document.hidden)pubLoad()},4000)}
 const vBoot=()=>`<main class="shell enter loginp"><div class="lg-logo"><img src="${LOGO_SRC}" alt="AI Arena"></div><h1 class="lg-h">${APP}</h1><p class="small muted lg-p">${esc(SRV.msg||'Menghubungkan ke server…')}</p>${SRV.stage==='offline'?`<div class="lg-box"><button class="btn full" data-act="srvRetry">Coba lagi</button><button class="btn ghost full" data-act="srvLocal">Pakai data di perangkat ini</button></div>`:''}</main>`;
 function docForServer(){const d=JSON.parse(JSON.stringify(S));(d.users||[]).forEach(u=>{delete u.code;delete u.codeUsed});(d.clubs||[]).forEach(c=>{delete c.code;delete c.invites});return d}
 function schedulePush(){if(!API_BASE||SRV.stage!=='app')return;clearTimeout(SRV.pushT);SRV.pushT=setTimeout(pushState,500)}
@@ -5379,7 +5404,7 @@ async function srvDelInvite(inviteId){try{await apiCall('DELETE','/api/invites/'
 Object.assign(A,{srvRetry(){bootServer()},srvLocal(){try{localStorage.removeItem('ai-arena-api')}catch(e){}location.href=location.pathname+'?api=off'}});
 /* kunjungan pertama: isi data contoh otomatis agar alur bisa langsung dicoba (sekali per perangkat) */
 try{if(!API_BASE&&!localStorage.getItem('ai-arena-demo-seeded')&&!S.users.some(u=>!u.role&&!u.guest)){dummyData();localStorage.setItem('ai-arena-demo-seeded','1');save();const tt=document.getElementById('toast');if(tt){tt.classList.remove('show');clearTimeout(toast._t)}}}catch(e){console.error('data contoh gagal',e)}
-if(API_BASE){bootServer()}else{try{migrateTour()}catch(e){console.error('migrasi data gagal',e)}
+if(API_BASE&&PUBLIC_LIVE){startPublicLive()}else if(API_BASE){bootServer()}else{try{migrateTour()}catch(e){console.error('migrasi data gagal',e)}
 render()}
 
 </script>

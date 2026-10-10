@@ -46,6 +46,26 @@ export function createApp() {
     res.json({ demo: rows });
   }));
 
+  // Papan skor publik (tanpa login): hanya laga berlangsung dan hasil beberapa jam terakhir, nama pemain dan skor saja.
+  app.get('/api/public/live', wrap(async (_req, res) => {
+    const doc = (await query('SELECT doc FROM app_state WHERE id=1')).rows[0]?.doc || {};
+    const name = new Map((doc.users || []).map(u => [u.id, u.name]));
+    const names = ids => (ids || []).map(i => name.get(i) || '?').join(' & ');
+    const club = new Map((doc.clubs || []).map(c => [c.id, c.name]));
+    const since = Date.now() - 6 * 3600 * 1000;
+    const out = (doc.matches || [])
+      .filter(m => m.status === 'playing' || (['verified', 'pending'].includes(m.status) && (m.t || 0) >= since))
+      .map(m => ({
+        id: m.id, status: m.status, court: m.court, club: club.get(m.clubId) || '',
+        a: names(m.teamA), b: names(m.teamB), games: m.games || [], draw: !!m.draw,
+        cur: m.cur ? { a: m.cur.a, b: m.cur.b } : null, t: m.t || 0,
+        video: !!(m.stream && !m.stream.ended),
+      }))
+      .sort((x, y) => (x.status === 'playing' ? 0 : 1) - (y.status === 'playing' ? 0 : 1) || y.t - x.t)
+      .slice(0, 30);
+    res.set('Cache-Control', 'no-store').json({ matches: out, at: Date.now() });
+  }));
+
   /* ---------- autentikasi ---------- */
   app.post('/api/auth/setup-admin', strict, wrap(async (req, res) => res.status(201).json(await auth.setupAdmin(req.body || {}))));
   app.post('/api/auth/login-admin', strict, wrap(async (req, res) => res.json(await auth.loginAdmin((req.body || {}).password))));

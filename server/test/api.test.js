@@ -573,3 +573,19 @@ test('PUT /state: obrolan, galeri, pembayaran, dan moderasi dijaga per peran', a
   r = await put(A.leaderToken, { mutes: [{ uid: budi.id, scope: 'lounge', until: Date.now() + 1000 }] });
   assert.ok(!(r.body.ignored || []).includes('mutes'));
 });
+
+test('papan skor publik: tanpa login, hanya nama dan skor laga berlangsung/terbaru', async () => {
+  const adminToken = await setup();
+  const st = await api('GET', '/api/state', undefined, adminToken);
+  const doc = { ...st.body.doc, users: [...(st.body.doc.users || []), { id: 'p1', name: 'Andi' }, { id: 'p2', name: 'Budi', phone: '0811' }], matches: [
+    { id: 'm1', status: 'playing', court: 'Lapangan 1', teamA: ['p1'], teamB: ['p2'], games: [[21, 15]], cur: { a: 3, b: 4, pos: { secret: 1 } }, t: Date.now() },
+    { id: 'm2', status: 'scheduled', teamA: ['p1'], teamB: ['p2'], games: [], t: Date.now() },
+  ] };
+  assert.equal((await api('PUT', '/api/state', { baseVersion: st.body.version, doc }, adminToken)).status, 200);
+  const r = await api('GET', '/api/public/live');
+  assert.equal(r.status, 200);
+  assert.equal(r.body.matches.length, 1);
+  assert.deepEqual(r.body.matches[0].cur, { a: 3, b: 4 });
+  assert.equal(r.body.matches[0].a, 'Andi');
+  assert.ok(!JSON.stringify(r.body).includes('0811'));
+});
