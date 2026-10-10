@@ -254,6 +254,21 @@ export async function deleteUser(user, targetId) {
   });
 }
 
+/** Ganti semua kode masuk yang belum terpakai (anggota, calon anggota, kode PB). Hanya Super User; akun demo dilewati. */
+export async function resetUnusedCodes(user) {
+  if (user.role !== 'superadmin') throw new HttpError(403, 'Hanya Super User.');
+  return tx(async db => {
+    const us = (await db.query(`SELECT id FROM users WHERE code_used=false AND is_demo=false AND role<>'superadmin' AND code IS NOT NULL FOR UPDATE`)).rows;
+    for (const u of us) await db.query('UPDATE users SET code=$2 WHERE id=$1', [u.id, await freshCode(db)]);
+    const inv = (await db.query('SELECT id FROM invites FOR UPDATE')).rows;
+    for (const i of inv) await db.query('UPDATE invites SET code=$2 WHERE id=$1', [i.id, await freshCode(db)]);
+    const cl = (await db.query(`SELECT id FROM clubs WHERE code IS NOT NULL FOR UPDATE`)).rows;
+    for (const c of cl) await db.query('UPDATE clubs SET code=$2 WHERE id=$1', [c.id, await freshCode(db)]);
+    await db.query(`INSERT INTO audit_log (actor_id,action,detail) VALUES ($1,'codes_reset_all',$2)`, [user.id, { users: us.length, invites: inv.length, clubs: cl.length }]);
+    return { users: us.length, invites: inv.length, clubs: cl.length };
+  });
+}
+
 /** Pindahkan anggota ke PB lain yang sudah disetujui. Hanya Super User. */
 export async function moveMember(user, clubId, targetId, toClubId) {
   if (user.role !== 'superadmin') throw new HttpError(403, 'Hanya Super User.');

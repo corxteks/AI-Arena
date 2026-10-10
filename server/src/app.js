@@ -79,6 +79,7 @@ export function createApp() {
   app.post('/api/clubs/:id/leader', auth.requireAuth, wrap(async (req, res) => { const r = await auth.changeLeader(req.user, req.params.id, (req.body || {}).userId); broadcast({ type: 'identity' }); res.json(r); }));
   app.delete('/api/invites/:id', auth.requireAuth, wrap(async (req, res) => { const r = await auth.deleteInvite(req.user, req.params.id); broadcast({ type: 'identity' }); res.json(r); }));
   app.delete('/api/users/:id', auth.requireAuth, wrap(async (req, res) => { const r = await auth.deleteUser(req.user, req.params.id); broadcast({ type: 'identity' }); res.json(r); }));
+  app.post('/api/admin/reset-unused-codes', auth.requireAuth, wrap(async (req, res) => { const r = await auth.resetUnusedCodes(req.user); broadcast({ type: 'identity' }); res.json(r); }));
   app.post('/api/users/:id/reset-code', auth.requireAuth, wrap(async (req, res) => { const r = await auth.resetUserCode(req.user, req.params.id); broadcast({ type: 'identity' }); res.json(r); }));
 
   /* ---------- data aplikasi (dokumen berversi) + siaran langsung ke klien ---------- */

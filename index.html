@@ -3708,6 +3708,7 @@ function vMenu(){
   if(admin||leaderClubs().length)rows.push(it('shield','Member dan PB','Data member, PB, dan anggota','data-act="tab" data-t="komunitas"','b'));
   rows.push(it('club','GOR','Jadwal tetap dan lapangan','data-act="tab" data-t="club"','t'));
   if(admin)rows.push(it('user','Profil','Foto, nama, dan kontak akun','data-act="openAkun"','a'));
+  if(admin&&API_BASE)rows.push(it('shield','Reset semua kode belum terpakai','Ganti kode masuk anggota yang belum login dan kode PB','data-act="resetAllCodes"','r'));
   if(admin&&API_BASE)rows.push(it('shield','Atur kata sandi','Kata sandi untuk masuk sebagai pengelola di perangkat lain','data-act="openModal" data-m="setAdminPw"','r'));
   if(!admin)rows.push(it('chat','Lapor masalah','Kirim kendala atau saran ke pengelola GOR','data-act="openModal" data-m="reportIssue"','r'));
   if(!admin)rows.push(it('user','Profil saya','Rating, riwayat, dan statistik',`data-act="profile" data-id="${ME}"`,'b'));
@@ -5027,6 +5028,8 @@ const A={
     try{if(API_BASE)await apiCall('DELETE','/api/users/'+u.id);
       S.users=S.users.filter(x=>x.id!==u.id);S.clubs.forEach(c=>{c.members=(c.members||[]).filter(x=>x!==u.id);c.requests=(c.requests||[]).filter(x=>x!==u.id)});
       logAct(`Akun dihapus: ${u.name}.`);ui.modal=null;commit(u.name+' dihapus.')}catch(e){toast(e.message)}},
+  async resetAllCodes(){if(!isAdmin()||!API_BASE)return;if(!confirm('Ganti semua kode masuk yang belum terpakai (anggota, calon anggota, dan kode PB)? Kode lama langsung tidak berlaku, dan kamu perlu membagikan kode baru.'))return;
+    try{const r=await apiCall('POST','/api/admin/reset-unused-codes',{});await pullIdentity();commit(`Kode diganti: ${r.users} anggota, ${r.invites} calon anggota, ${r.clubs} kode PB.`)}catch(e){toast(e.message)}},
   sendIssue(){const t=val('rpTxt').trim();if(t.length<5)return toast('Tulis laporan minimal 5 huruf.');notify(admins(),`Laporan dari ${first(ME)}: ${t.slice(0,300)}`,{tab:'home'});ui.modal=null;commit('Laporan terkirim ke pengelola GOR.')},
   async setAdminPw(){const p1=val('apw1'),p2=val('apw2');if(p1.length<8)return toast('Kata sandi minimal 8 karakter.');if(p1!==p2)return toast('Kata sandi dan ulangannya tidak sama.');
     try{await apiCall('POST','/api/auth/set-admin-password',{password:p1});ui.modal=null;commit('Kata sandi pengelola disimpan.')}catch(e){toast(e.message)}},

@@ -495,3 +495,18 @@ test('hapus akun: hanya Super User, ketua PB tidak bisa dihapus, anggota hilang 
   assert.ok(!club.members.some(m => m.id === uid));
   assert.equal((await api('DELETE', `/api/users/${uid}`, undefined, adminToken)).status, 404);
 });
+
+test('reset semua kode belum terpakai: hanya Super User, kode lama mati, akun demo dan yang sudah masuk aman', async () => {
+  const adminToken = await setup();
+  const A = await makeClub(adminToken, 'PB Satu');
+  const add = await api('POST', `/api/clubs/${A.clubId}/members`, { name: 'Sari' }, A.leaderToken);
+  const add2 = await api('POST', `/api/clubs/${A.clubId}/members`, { name: 'Budi' }, A.leaderToken);
+  const used = await api('POST', '/api/auth/login', { code: add2.body.code });
+  assert.equal(used.status, 200);
+  assert.equal((await api('POST', '/api/admin/reset-unused-codes', {}, A.leaderToken)).status, 403);
+  const r = await api('POST', '/api/admin/reset-unused-codes', {}, adminToken);
+  assert.equal(r.status, 200);
+  assert.ok(r.body.invites >= 1);
+  assert.equal((await api('POST', '/api/auth/login', { code: add.body.code })).status, 404);
+  assert.equal((await api('GET', '/api/me', undefined, used.body.token)).status, 200);
+});
