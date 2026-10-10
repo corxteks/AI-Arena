@@ -81,7 +81,10 @@ export function createApp() {
     const now = Date.now();
     const live = (doc.matches || [])
       .filter(m => (m.status === 'playing' && now - (m.startedAt || m.t || 0) < 8 * 3600 * 1000) || (['verified', 'pending'].includes(m.status) && (m.t || 0) >= now - 6 * 3600 * 1000))
-      .map(m => ({ id: m.id, status: m.status, court: m.court, a: pair(m.teamA), b: pair(m.teamB), games: m.games || [], draw: !!m.draw, cur: m.cur ? { a: m.cur.a, b: m.cur.b } : null, t: m.t || 0 }))
+      .map(m => ({ id: m.id, status: m.status, court: m.court, a: pair(m.teamA), b: pair(m.teamB), games: m.games || [], draw: !!m.draw, cur: m.cur ? { a: m.cur.a, b: m.cur.b } : null, t: m.t || 0,
+        video: !!(m.stream && !m.stream.ended && (m.stream.mode !== 'phone' || now - (m.stream.beat || m.stream.started || 0) < 60000)),
+        peer: m.stream && m.stream.mode === 'phone' && !m.stream.ended ? String(m.stream.peerId || '').slice(0, 80) : null,
+        yt: m.stream && m.stream.mode === 'youtube' && !m.stream.ended && /^[\w-]{6,20}$/.test(String(m.stream.broadcastId || '')) ? m.stream.broadcastId : null }))
       .sort((x, y) => (x.status === 'playing' ? 0 : 1) - (y.status === 'playing' ? 0 : 1) || y.t - x.t).slice(0, 8);
     const rank = (doc.users || [])
       .filter(u => !u.role && !u.guest && !demo.has(u.id) && (u.played || 0) > 0)

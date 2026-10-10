@@ -662,3 +662,23 @@ test('beranda publik: nama dipendekkan, tanpa akun demo, tanpa data pribadi', as
   assert.equal(r.body.next[0].a, 'Andi W.');
   assert.ok(!JSON.stringify(r.body).includes('0811'));
 });
+
+
+test('beranda publik: laga disiarkan membawa data video (peer atau YouTube) agar pengunjung bisa menonton', async () => {
+  const adminToken = await setup();
+  const st = await api('GET', '/api/state', undefined, adminToken);
+  const now = Date.now();
+  const mk = (id, stream) => ({ id, status: 'playing', court: 'L1', teamA: [], teamB: [], games: [], cur: { a: 1, b: 0 }, t: now, startedAt: now, stream });
+  const doc = { ...(st.body.doc || {}), matches: [
+    mk('hp', { mode: 'phone', peerId: 'aiarena-hp', started: now, beat: now, ended: false }),
+    mk('yt', { mode: 'youtube', broadcastId: 'BCdemo12345', started: now, ended: false }),
+    mk('none', null)] };
+  assert.equal((await api('PUT', '/api/state', { baseVersion: st.body.version, doc }, adminToken)).status, 200);
+  const live = (await api('GET', '/api/public/home')).body.live;
+  const by = id => live.find(m => m.id === id);
+  assert.equal(by('hp').peer, 'aiarena-hp');
+  assert.equal(by('hp').video, true);
+  assert.equal(by('yt').yt, 'BCdemo12345');
+  assert.equal(by('none').video, false);
+  assert.equal(by('none').peer, null);
+});
