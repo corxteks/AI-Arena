@@ -510,3 +510,66 @@ test('reset semua kode belum terpakai: hanya Super User, kode lama mati, akun de
   assert.equal((await api('POST', '/api/auth/login', { code: add.body.code })).status, 404);
   assert.equal((await api('GET', '/api/me', undefined, used.body.token)).status, 200);
 });
+
+test('PUT /state: obrolan, galeri, pembayaran, dan moderasi dijaga per peran', async () => {
+  const adminToken = await setup();
+  const A = await makeClub(adminToken, 'PB Satu');
+  const B = await makeClub(adminToken, 'PB Dua');
+  const mk = async name => { const a = await api('POST', `/api/clubs/${A.clubId}/members`, { name }, A.leaderToken); const l = await api('POST', '/api/auth/login', { code: a.body.code }); return { id: l.body.user.id, token: l.body.token }; };
+  const sari = await mk('Sari'), budi = await mk('Budi');
+  const get = async tok => (await api('GET', '/api/state', undefined, tok)).body;
+  const put = async (tok, doc) => { const st = await get(adminToken); return api('PUT', '/api/state', { baseVersion: st.version, doc: { ...st.doc, ...doc } }, tok); };
+  let st = await get(adminToken);
+  const msg = (id, uid, text, extra = {}) => ({ id, uid, text, t: Date.now(), ...extra });
+  // Sari menulis di lounge atas namanya sendiri: diterima. Atas nama Budi: ditolak.
+  let r = await put(sari.token, { chats: { lounge: [msg('c1', sari.id, 'halo'), msg('c2', budi.id, 'palsu')] } });
+  assert.deepEqual(r.body.ignored, ['chats']);
+  st = await get(adminToken);
+  assert.deepEqual(st.doc.chats.lounge.map(m => m.id), ['c1']);
+  // Budi tidak boleh mengubah isi pesan Sari, tapi boleh memberi reaksi.
+  r = await put(budi.token, { chats: { lounge: [msg('c1', sari.id, 'diubah', { t: st.doc.chats.lounge[0].t })] } });
+  assert.ok(r.body.ignored.includes('chats'));
+  st = await get(adminToken);
+  assert.equal(st.doc.chats.lounge[0].text, 'halo');
+  r = await put(budi.token, { chats: { lounge: [{ ...st.doc.chats.lounge[0], react: { '👍': [budi.id] } }] } });
+  assert.equal(r.body.ignored, undefined);
+  // Budi tidak boleh menghapus pesan Sari; Sari boleh menghapus pesannya sendiri.
+  r = await put(budi.token, { chats: { lounge: [] } });
+  assert.ok(r.body.ignored.includes('chats'));
+  st = await get(adminToken);
+  assert.equal(st.doc.chats.lounge.length, 1);
+  r = await put(sari.token, { chats: { lounge: [] } });
+  assert.equal(r.body.ignored, undefined);
+  // Pengumuman GOR hanya Super User; ruang PB lain hanya anggotanya.
+  r = await put(sari.token, { chats: { ann: [msg('a1', sari.id, 'x')] } });
+  assert.ok(r.body.ignored.includes('chats'));
+  r = await put(B.leaderToken, { chats: { ['club:' + A.clubId]: [msg('k1', 'x', 'masuk')] } });
+  assert.ok(r.body.ignored.includes('chats'));
+  r = await put(sari.token, { chats: { ['club:' + A.clubId]: [msg('k2', sari.id, 'anggota boleh')] } });
+  assert.equal(r.body.ignored, undefined);
+  // Mengirim dokumen tanpa kunci chats tidak menghapus obrolan.
+  st = await get(adminToken);
+  const { chats, ...noChats } = st.doc;
+  r = await api('PUT', '/api/state', { baseVersion: st.version, doc: noChats }, budi.token);
+  assert.ok(r.body.ignored.includes('chats'));
+  assert.ok((await get(adminToken)).doc.chats['club:' + A.clubId]);
+  // Galeri: Sari mengunggah; Budi boleh like, tidak boleh ubah/hapus; ketua PB-nya boleh menyembunyikan.
+  const photo = { id: 'p1', by: sari.id, clubId: A.clubId, caption: 'asli', t: Date.now(), likes: [], comments: [] };
+  r = await put(sari.token, { gallery: [photo] });
+  assert.equal(r.body.ignored, undefined);
+  r = await put(budi.token, { gallery: [{ ...photo, likes: [budi.id] }] });
+  assert.equal(r.body.ignored, undefined);
+  r = await put(budi.token, { gallery: [{ ...photo, likes: [budi.id], caption: 'diubah' }] });
+  assert.ok(r.body.ignored.includes('gallery'));
+  r = await put(budi.token, { gallery: [] });
+  assert.ok(r.body.ignored.includes('gallery'));
+  r = await put(B.leaderToken, { gallery: [{ ...photo, hidden: true }] });
+  assert.ok(r.body.ignored.includes('gallery'));
+  r = await put(A.leaderToken, { gallery: [{ ...photo, likes: [budi.id], hidden: true }] });
+  assert.equal(r.body.ignored, undefined);
+  // Pembayaran hanya Super User; pembisuan hanya ketua PB atau Super User.
+  r = await put(sari.token, { payments: [{ id: 'pay1' }], mutes: [{ uid: budi.id }] });
+  assert.ok(r.body.ignored.includes('payments') && r.body.ignored.includes('mutes'));
+  r = await put(A.leaderToken, { mutes: [{ uid: budi.id, scope: 'lounge', until: Date.now() + 1000 }] });
+  assert.ok(!(r.body.ignored || []).includes('mutes'));
+});
