@@ -25,6 +25,7 @@ export default async function handler(req, res) {
     body: JSON.stringify({ message: `Cadangan otomatis ${day}`, content }),
   });
   const body = await r.json().catch(() => ({}));
+  if (!r.ok) console.error('Cadangan gagal:', r.status, body.message || '');
   if (!r.ok) return res.status(502).json({ error: 'Gagal menyimpan ke GitHub: ' + (body.message || r.status) });
   res.json({ ok: true, path, tables: Object.fromEntries(tables.map(t => [t, dump[t].length])) });
 }
