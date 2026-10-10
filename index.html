@@ -2463,7 +2463,7 @@ body .row:has(>.h2hb)>.linkbtn .chip{font-size:10px!important;padding:1px 6px!im
 const PROD_API='https://ai-arena-lovat.vercel.app';
 let DEFERRED_INSTALL=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();DEFERRED_INSTALL=e;try{if(typeof SRV!=='undefined'&&SRV.stage!=='app')render(true)}catch(x){}});
-try{if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}
+try{if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{})}catch(e){}
 const WELCOME_KEY='ai-arena-welcome';
 const welcomed=()=>{try{return sessionStorage.getItem(WELCOME_KEY)==='1'}catch(e){return true}};
 const vWelcome=()=>`<main class="welcome"><img class="wl-logo" src="logo-besar.jpg" alt="AI Badminton Arena" width="720" height="794"><button class="btn wl-btn" data-act="welcomeGo">Lanjutkan</button></main>`;
