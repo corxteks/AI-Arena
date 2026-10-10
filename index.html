@@ -5142,7 +5142,7 @@ const A={
     (S.users.filter(x=>x.role==='superadmin')).forEach(a=>notify(a.id,'Pendaftaran PB baru: '+pb+' (ketua '+kn+'). Menunggu konfirmasi.',{tab:'komunitas'}));
     ui.lgReg='done';ui.lgRegInfo={pb,kn};commit()},
   copyLogin(d){try{navigator.clipboard.writeText(d.c);toast('Kode '+d.c+' disalin.')}catch(e){toast('Kode: '+d.c)}},
-  logout(){try{localStorage.removeItem(LOGIN_KEY);sessionStorage.removeItem(KEY+':me')}catch(e){}LOGGED=false;ui={...ui,tab:'home',view:null,modal:null};render()},
+  logout(){if(API_BASE){srvSignOut();window.scrollTo(0,0);return}try{localStorage.removeItem(LOGIN_KEY);sessionStorage.removeItem(KEY+':me')}catch(e){}LOGGED=false;ui={...ui,tab:'home',view:null,modal:null};render()},
   cbdNav(d){const e=document.querySelector('.cbd2');if(e)e.scrollBy({left:(+d.d)*e.clientWidth*.86,behavior:'smooth'})},
   uSwapPos(d){const m=match(ui.matchId),c=m&&m.cur;if(!c||c.a+c.b!==0)return;const p=c.pos[d.side];if(p&&p.L!=null){[p.R,p.L]=[p.L,p.R];c.srv=c.pos[c.server][c[c.server]%2===0?'R':'L']||c.pos[c.server].R;commit()}},
   uFirst(d){const m=match(ui.matchId),c=m&&m.cur;if(!c||c.a+c.b!==0||m.games.length)return;c.server=d.side;c.srv=c.pos[d.side].R;commit()},
