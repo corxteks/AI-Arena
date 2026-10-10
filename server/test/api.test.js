@@ -603,3 +603,28 @@ test('papan skor publik: siaran HP hanya muncul bila masih segar dan membawa pee
   assert.equal(by('fresh').peer, 'aiarena-fresh');
   assert.equal(by('stale').video, false);
 });
+
+
+test('YouTube: ketua dan wasit laga boleh mengelola siaran lagannya, orang lain tidak', async () => {
+  const adminToken = await setup();
+  const A = await makeClub(adminToken, 'PB Satu');
+  const B = await makeClub(adminToken, 'PB Dua');
+  fakeYouTube();
+  const add = await api('POST', `/api/clubs/${A.clubId}/members`, { name: 'Wasit' }, A.leaderToken);
+  const w = await api('POST', '/api/auth/login', { code: add.body.code });
+  const st = await api('GET', '/api/state', undefined, adminToken);
+  const doc = { ...(st.body.doc || {}), matches: [{ id: 'mx', clubId: A.clubId, umpireId: w.body.user.id, teamA: [], teamB: [], games: [], status: 'playing' }] };
+  assert.equal((await api('PUT', '/api/state', { baseVersion: st.body.version, doc }, adminToken)).status, 200);
+  const mk = (tok, court) => api('POST', '/api/youtube/streams', { matchId: 'mx', court, title: 'Laga X' }, tok);
+  assert.equal((await mk(B.leaderToken, 'Lapangan 1')).status, 403);
+  const s1 = await mk(A.leaderToken, 'Lapangan 1');
+  assert.equal(s1.status, 201);
+  assert.equal((await api('POST', `/api/youtube/streams/${s1.body.id}/transition`, { status: 'live' }, B.leaderToken)).status, 403);
+  assert.equal((await api('POST', `/api/youtube/streams/${s1.body.id}/transition`, { status: 'live' }, w.body.token)).status, 200);
+  assert.equal((await api('GET', `/api/youtube/streams/${s1.body.id}/ingest`, undefined, w.body.token)).status, 200);
+  assert.equal((await api('GET', '/api/youtube/streams', undefined, w.body.token)).status, 403);
+  assert.equal((await api('GET', '/api/youtube/status', undefined, w.body.token)).status, 403);
+  const rd = await api('GET', '/api/youtube/ready', undefined, w.body.token);
+  assert.equal(rd.status, 200);
+  assert.equal(typeof rd.body.ready, 'boolean');
+});

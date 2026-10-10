@@ -61,6 +61,7 @@ export function createApp() {
         cur: m.cur ? { a: m.cur.a, b: m.cur.b } : null, t: m.t || 0,
         video: !!(m.stream && !m.stream.ended && (m.stream.mode !== 'phone' || Date.now() - (m.stream.beat || m.stream.started || 0) < 60000)),
         peer: m.stream && m.stream.mode === 'phone' && !m.stream.ended ? String(m.stream.peerId || '').slice(0, 80) : null,
+        yt: m.stream && m.stream.mode === 'youtube' && !m.stream.ended && /^[\w-]{6,20}$/.test(String(m.stream.broadcastId || '')) ? m.stream.broadcastId : null,
       }))
       .sort((x, y) => (x.status === 'playing' ? 0 : 1) - (y.status === 'playing' ? 0 : 1) || y.t - x.t)
       .slice(0, 30);
@@ -161,27 +162,45 @@ export function createApp() {
     res.type('html').send(`<!doctype html><meta charset="utf-8"><title>YouTube terhubung</title><body style="font-family:system-ui;padding:2rem"><h2>YouTube terhubung</h2><p>${r.channel ? 'Kanal: ' + String(r.channel.title).replace(/[<>&]/g, '') : 'Kanal terhubung.'}</p><p>Kamu bisa menutup halaman ini.</p>`);
   }));
 
+  // Ketua PB dan wasit laga itu boleh mengelola siaran laganya; selain itu hanya Super User.
+  const canStream = async (user, matchId) => {
+    if (user.role === 'superadmin') return true;
+    const doc = (await query('SELECT doc FROM app_state WHERE id=1')).rows[0]?.doc || {};
+    const m = (doc.matches || []).find(x => x.id === matchId);
+    if (!m) return false;
+    if (m.umpireId === user.id) return true;
+    return (await query(`SELECT 1 FROM clubs WHERE id=$1 AND leader_id=$2 AND status='approved'`, [m.clubId, user.id])).rowCount > 0;
+  };
+  const streamGuard = async (req, _res, next) => {
+    try {
+      let matchId = (req.body || {}).matchId;
+      if (req.params.id) matchId = (await query('SELECT match_id FROM streams WHERE id=$1', [req.params.id])).rows[0]?.match_id;
+      if (req.user.role !== 'superadmin' && !(await canStream(req.user, matchId))) throw new HttpError(403, 'Hanya Super User, ketua PB, atau wasit laga ini.');
+      next();
+    } catch (e) { next(e); }
+  };
   const yts = express.Router();
-  yts.use(auth.requireAuth, auth.requireAdmin);
-  yts.get('/status', wrap(async (_req, res) => res.json(await yt.status())));
-  yts.get('/auth-url', wrap(async (req, res) => {
+  yts.use(auth.requireAuth);
+  yts.get('/ready', wrap(async (_req, res) => { const st = await yt.status(); res.json({ ready: st.configured && st.connected, quotaLeft: st.quota.left }); }));
+  yts.get('/status', auth.requireAdmin, wrap(async (_req, res) => res.json(await yt.status())));
+  yts.get('/auth-url', auth.requireAdmin, wrap(async (req, res) => {
     const state = jwt.sign({ purpose: 'youtube', sub: req.user.id }, config.jwtSecret, { expiresIn: '10m' });
     res.json({ url: yt.authUrl(state) });
   }));
-  yts.delete('/connection', wrap(async (_req, res) => { await yt.disconnect(); res.json({ ok: true }); }));
-  yts.get('/streams', wrap(async (req, res) => res.json({ streams: await yt.listStreams(req.query.active === '1') })));
-  yts.post('/streams', wrap(async (req, res) => {
+  yts.delete('/connection', auth.requireAdmin, wrap(async (_req, res) => { await yt.disconnect(); res.json({ ok: true }); }));
+  yts.get('/streams', auth.requireAdmin, wrap(async (req, res) => res.json({ streams: await yt.listStreams(req.query.active === '1') })));
+  yts.post('/streams', streamGuard, wrap(async (req, res) => {
     const b = req.body || {};
     const r = await yt.createStream({ matchId: b.matchId, court: b.court, title: b.title, description: b.description, privacy: b.privacy, userId: req.user.id });
     broadcast({ type: 'stream', id: r.id, status: 'created', court: b.court });
     res.status(201).json(r);
   }));
-  yts.post('/streams/:id/transition', wrap(async (req, res) => {
+  yts.post('/streams/:id/transition', streamGuard, wrap(async (req, res) => {
     const r = await yt.transition(req.params.id, (req.body || {}).status);
     broadcast({ type: 'stream', id: r.id, status: r.status });
     res.json(r);
   }));
-  yts.get('/streams/:id/ingest', wrap(async (req, res) => res.json(await yt.ingestInfo(req.params.id))));
+  yts.get('/streams/:id/ingest', streamGuard, wrap(async (req, res) => res.json(await yt.ingestInfo(req.params.id))));
   app.use('/api/youtube', yts);
 
   /* ---------- galat ---------- */
