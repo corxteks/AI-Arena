@@ -639,3 +639,26 @@ test('papan skor publik: laga berlangsung yang tertahan lebih dari 8 jam tidak d
   const ids = (await api('GET', '/api/public/live')).body.matches.map(m => m.id);
   assert.deepEqual(ids, ['baru']);
 });
+
+
+test('beranda publik: nama dipendekkan, tanpa akun demo, tanpa data pribadi', async () => {
+  const adminToken = await setup();
+  const A = await makeClub(adminToken, 'PB Satu');
+  const me = await api('GET', '/api/me', undefined, A.leaderToken);
+  const st = await api('GET', '/api/state', undefined, adminToken);
+  const now = Date.now();
+  const doc = { ...(st.body.doc || {}),
+    users: [{ id: 'p1', name: 'Andi Wijaya Putra', elo: 1400, played: 5, wins: 4, phone: '0811' }, { id: 'p2', name: 'Budi', elo: 1300, played: 2, wins: 1 }, { id: 'p3', name: 'Tanpa Main', elo: 1500, played: 0, wins: 0 }, { id: me.body.user.id, name: 'Ketua Demo', elo: 1600, played: 9, wins: 9 }],
+    clubs: [{ id: 'c1', name: 'PB Satu', status: 'approved', leaderId: 'p1', members: ['p1', 'p2'] }, { id: 'c2', name: 'PB Demo', status: 'approved', leaderId: me.body.user.id, members: [me.body.user.id] }],
+    matches: [{ id: 'm1', status: 'scheduled', court: 'Lapangan 1', teamA: ['p1'], teamB: ['p2'], games: [], when: now + 3600000 }] };
+  assert.equal((await api('PUT', '/api/state', { baseVersion: st.body.version, doc }, adminToken)).status, 200);
+  const q = await import('../src/db.js');
+  await q.query('UPDATE users SET is_demo=true WHERE id=$1', [me.body.user.id]);
+  const r = await api('GET', '/api/public/home');
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.body.rank.map(x => x.n), ['Andi W.', 'Budi']);
+  assert.equal(r.body.rank[0].c, 'PB Satu');
+  assert.deepEqual(r.body.clubs, [{ name: 'PB Satu', n: 2 }]);
+  assert.equal(r.body.next[0].a, 'Andi W.');
+  assert.ok(!JSON.stringify(r.body).includes('0811'));
+});

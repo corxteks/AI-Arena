@@ -2587,7 +2587,7 @@ function vLogin(){ensureCodes();let ex=[];
   if(API_BASE){ex=(SRV.demo||[]).map(d=>[(d.peran==='ketua'?'Ketua ':'Anggota ')+d.name+(d.club?' ('+d.club+')':''),d.code])}
   else{const lead=S.clubs.find(c=>c.status==='approved'&&user(c.leaderId)&&user(c.leaderId).code&&!user(c.leaderId).codeUsed),inv=S.clubs.map(c=>(c.invites||[]).map(i=>({c,i}))).flat()[0],mem=S.users.find(u=>!u.role&&!u.guest&&u.code&&!u.codeUsed&&!S.clubs.some(c=>c.leaderId===u.id));
     if(lead)ex.push(['Ketua '+lead.name,user(lead.leaderId).code]);if(mem)ex.push(['Anggota ('+mem.name+')',mem.code]);if(inv)ex.push(['Calon anggota ('+inv.i.name+')',inv.i.code])}
-  return `<main class="shell enter loginp${API_BASE?' srvmode':''}"><div class="lg-logo"><img src="${LOGO_SRC}" alt="AI Arena"></div>
+  return `<main class="shell enter loginp${API_BASE?' srvmode':''}">${API_BASE&&!IS_APK&&ui.pubLogin?'<p style="text-align:center;margin:0 0 6px"><button class="btn sm ghost" data-act="pubBack">‹ Kembali ke beranda</button></p>':''}<div class="lg-logo"><img src="${LOGO_SRC}" alt="AI Arena"></div>
   <h1 class="lg-h">Selamat datang di ${APP}</h1><p class="small muted lg-p">Masukkan kode yang kamu terima dari ketua PB atau pengelola GOR. Kamu akan langsung masuk dengan namamu.</p>
   <div class="panel lg-box"><label for="lgCode">Kode masuk</label><input id="lgCode" maxlength="12" placeholder="K7M2XQ" autocomplete="off" autocapitalize="characters" spellcheck="false">
   <button class="btn full" data-act="loginCode">Masuk</button><p class="small lg-err" id="lgErr" role="alert"></p></div>
@@ -4602,7 +4602,7 @@ function render(preserve){if(PUBLIC_LIVE){pubRender();return}applyBg();ESTC={};{
   const keep=preserve?[...document.querySelectorAll('input[id]:not([type=file]),textarea[id],select[id]')].map(e=>[e.id,e.type==='checkbox'?e.checked:e.value]):[];
   const focus=preserve&&document.activeElement?document.activeElement.id:null;
   tick();saveUi();
-  if(API_BASE&&SRV.stage!=='app'){document.getElementById('app').innerHTML=SRV.stage==='setup'?vSetup():SRV.stage==='login'?vLogin():vBoot();return}
+  if(API_BASE&&SRV.stage!=='app'){document.getElementById('app').innerHTML=SRV.stage==='setup'?vSetup():SRV.stage==='login'?(pubHomeOn()?vPublicHome():vLogin()):vBoot();return}
   ensureCodes();const u=me(), admin=isAdmin(), app=document.getElementById('app');
   if(!S.adminClaimed){app.innerHTML=vSetup();return}
   if(!LOGGED){app.innerHTML=vLogin();return}
@@ -5091,6 +5091,9 @@ const A={
       logAct(`Akun dihapus: ${u.name}.`);ui.modal=null;commit(u.name+' dihapus.')}catch(e){toast(e.message)}},
   async resetAllCodes(){if(!isAdmin()||!API_BASE)return;if(!confirm('Ganti semua kode masuk yang belum terpakai (anggota, calon anggota, dan kode PB)? Kode lama langsung tidak berlaku, dan kamu perlu membagikan kode baru.'))return;
     try{const r=await apiCall('POST','/api/admin/reset-unused-codes',{});await pullIdentity();commit(`Kode diganti: ${r.users} anggota, ${r.invites} calon anggota, ${r.clubs} kode PB.`)}catch(e){toast(e.message)}},
+  pubMasuk(){ui.pubLogin='masuk';render();window.scrollTo(0,0)},
+  pubDaftar(){ui.pubLogin='daftar';ui.lgReg='form';render();window.scrollTo(0,0)},
+  pubBack(){ui.pubLogin=null;ui.lgReg=null;ui.lgAdmin=false;render();window.scrollTo(0,0)},
   pubCourt(d){PUB.court=d.v||'all';pubRender()},
   pubFocus(d){PUB.focus=d.id||null;pubRender();window.scrollTo(0,0)},
   async pwaInstall(){if(!DEFERRED_INSTALL)return;DEFERRED_INSTALL.prompt();try{await DEFERRED_INSTALL.userChoice}catch(e){}DEFERRED_INSTALL=null;render(true)},
@@ -5527,6 +5530,34 @@ async function ytStop(id,toastMsg){
   if(yid){try{await apiCall('POST','/api/youtube/streams/'+yid+'/transition',{status:'complete'})}catch(e){if(!/tidak bisa diubah|tidak ditemukan/i.test(e.message))return toast(ytErr(e))}}
   if(m.stream&&m.stream.mode==='youtube'&&!m.stream.ended){m.stream.ended=true;m.stream.endedAt=Date.now()}delete m.ytPending;ui.modal=null;commit(toastMsg||'Siaran diakhiri.')}
 async function ytSetupLoad(){try{const d=await apiCall('GET','/api/youtube/status');if(ui.modal&&ui.modal.type==='ytSetup'){ui.modal.data=d;ui.modal.err='';render(true)}}catch(e){if(ui.modal&&ui.modal.type==='ytSetup'){ui.modal.err=e.message;render(true)}}}
+
+/* ---------- beranda publik untuk pengunjung web (APK tetap langsung ke layar masuk) ---------- */
+const IS_APK=!!(window.Capacitor&&((Capacitor.isNativePlatform&&Capacitor.isNativePlatform())||(Capacitor.getPlatform&&Capacitor.getPlatform()!=='web')));
+const FORCE_LOGIN=/[?&]login(=|&|$)/.test(location.search);
+const PUBH={d:null,err:'',sig:'',loading:false};
+const pubHomeOn=()=>!!(API_BASE&&!IS_APK&&!FORCE_LOGIN&&!ui.pubLogin&&SRV.stage==='login'&&!PUBLIC_LIVE);
+async function pubHomeLoad(){if(PUBH.loading)return;PUBH.loading=true;
+  try{PUBH.d=await apiCall('GET','/api/public/home',undefined,true);PUBH.err=''}catch(e){if(!PUBH.d)PUBH.err='Data belum bisa dimuat. Coba lagi sebentar lagi.'}
+  PUBH.loading=false;
+  if(pubHomeOn()){const sig=JSON.stringify([PUBH.d&&{l:PUBH.d.live,r:PUBH.d.rank,n:PUBH.d.next,c:PUBH.d.clubs},PUBH.err]);if(sig!==PUBH.sig){PUBH.sig=sig;const y=window.scrollY;render();window.scrollTo(0,y)}}}
+setInterval(()=>{if(pubHomeOn()&&!document.hidden)pubHomeLoad()},8000);
+function vPublicHome(){
+  const d=PUBH.d;if(!d&&!PUBH.err&&!PUBH.loading)pubHomeLoad();
+  const live=(d&&d.live)||[],rank=(d&&d.rank)||[],next=(d&&d.next)||[],clubs=(d&&d.clubs)||[];
+  const gw=(m,k)=>m.games.filter(g=>k==='a'?g[0]>g[1]:g[1]>g[0]).length;
+  const sc=(m,k)=>m.status==='playing'&&m.cur?m.cur[k]:m.draw&&m.games.length?m.games[m.games.length-1][k==='a'?0:1]:gw(m,k);
+  const lrow=m=>`<article class="panel livecard"><div class="lh">${m.status==='playing'?'<span class="chip live">LIVE</span>':`<span class="chip ok">${m.draw?'Seri':'Selesai'}</span>`}<b>${esc(m.court||'')}</b></div>${['a','b'].map(k=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:3px 0"><span style="font-weight:600">${esc(m[k])}</span><b class="num" style="font-size:22px">${sc(m,k)}</b></div>`).join('')}${m.games.length?`<div class="small muted">Gim: ${m.games.map(g=>g.join('–')).join(', ')}</div>`:''}</article>`;
+  return `<main class="shell enter loginp pubhome">
+  <div class="lg-logo"><img src="${LOGO_SRC}" alt="AI Arena"></div>
+  <h1 class="lg-h">${APP}</h1><p class="small muted lg-p">Aplikasi member ganda bulutangkis GOR kami. Pantau skor langsung, peringkat, dan jadwal laga.</p>
+  <div class="actions" style="justify-content:center;gap:8px;margin:6px 0 14px"><button class="btn" data-act="pubMasuk">Masuk</button><button class="btn ghost" data-act="pubDaftar">Daftar PB</button></div>
+  ${PUBH.err?`<div class="panel"><p class="small" style="margin:6px 0">${esc(PUBH.err)}</p></div>`:d===null?'<div class="panel"><p class="muted small" style="margin:6px 0">Memuat…</p></div>':''}
+  ${d?`<section class="sec"><h2>Skor langsung</h2>${live.length?live.map(lrow).join(''):'<div class="panel"><p class="muted small" style="margin:6px 0">Belum ada pertandingan yang berlangsung.</p></div>'}</section>
+  <section class="sec"><h2>Peringkat 10 besar</h2><div class="panel">${rank.length?rank.map((r,i)=>`<div class="row"><b style="width:26px">${i+1}</b><span class="grow">${esc(r.n)}${r.c?` <small class="muted">${esc(r.c)}</small>`:''}</span><b class="num">${r.elo}</b><span class="small muted" style="min-width:42px;text-align:right">${r.w}–${r.p-r.w}</span></div>`).join(''):'<p class="muted small" style="margin:6px 0">Peringkat muncul setelah ada laga yang tercatat.</p>'}</div></section>
+  <section class="sec"><h2>Laga berikutnya</h2><div class="panel">${next.length?next.map(m=>`<div class="row"><div class="grow"><b>${esc(m.a)} vs ${esc(m.b)}</b><div class="small muted">${esc(m.court||'')}, ${sdate(m.when)} ${ftime(m.when)}</div></div></div>`).join(''):'<p class="muted small" style="margin:6px 0">Belum ada laga terjadwal.</p>'}</div></section>
+  <section class="sec"><h2>PB yang bergabung</h2><div class="panel">${clubs.length?clubs.map(c=>`<span class="chip" style="margin:3px">${esc(c.name)} · ${c.n} anggota</span>`).join(''):'<p class="muted small" style="margin:6px 0">Belum ada PB.</p>'}</div></section>`:''}
+  <div class="actions" style="justify-content:center;gap:8px;margin:14px 0 4px">${DEFERRED_INSTALL?'<button class="btn sm" data-act="pwaInstall">Pasang di layar utama</button>':''}<button class="btn sm ghost" data-act="shareLink">Bagikan tautan</button><a class="btn sm ghost" href="${location.pathname}?live">Skor layar penuh</a></div>
+  <p class="small muted" style="text-align:center">Butuh kode masuk? Tanyakan ke ketua PB Anda.</p></main>`}
 const vBoot=()=>`<main class="shell enter loginp"><div class="lg-logo"><img src="${LOGO_SRC}" alt="AI Arena"></div><h1 class="lg-h">${APP}</h1><p class="small muted lg-p">${esc(SRV.msg||'Menghubungkan ke server…')}</p>${SRV.stage==='offline'?`<div class="lg-box"><button class="btn full" data-act="srvRetry">Coba lagi</button><button class="btn ghost full" data-act="srvLocal">Pakai data di perangkat ini</button></div>`:''}</main>`;
 function docForServer(){const d=JSON.parse(JSON.stringify(S));(d.users||[]).forEach(u=>{delete u.code;delete u.codeUsed});(d.clubs||[]).forEach(c=>{delete c.code;delete c.invites});return d}
 function schedulePush(){if(!API_BASE||SRV.stage!=='app')return;clearTimeout(SRV.pushT);SRV.pushT=setTimeout(pushState,500)}
@@ -5546,7 +5577,7 @@ async function reloadRemote(msg){const st=await apiCall('GET','/api/state');SRV.
   if(st.doc&&Array.isArray(st.doc.users)&&st.doc.users.length){const keep=ME;S=st.doc;try{migrateTour()}catch(e){}await pullIdentity();ME=keep;SRV.lastJson=JSON.stringify(docForServer());try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}render(true);if(msg)toast(msg)}}
 function startSSE(){try{if(SRV.es)SRV.es.close();const es=new EventSource(API_BASE+'/api/events?token='+encodeURIComponent(SRV.token));
   es.onmessage=e=>{try{const ev=JSON.parse(e.data);if(ev.type==='state'&&ev.version>SRV.version&&!SRV.busy)reloadRemote().catch(()=>{});else if(ev.type==='identity'&&!SRV.busy)pullIdentity().then(()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(x){}if(!ui.modal&&!document.activeElement?.matches('input,textarea,select'))render(true)}).catch(()=>{})}catch(x){}};SRV.es=es}catch(e){}}
-function srvSignOut(){try{localStorage.removeItem(KEY+':token');localStorage.removeItem(LOGIN_KEY);sessionStorage.removeItem(KEY+':me')}catch(e){}SRV.token='';SRV.stage='login';LOGGED=false;if(SRV.es){SRV.es.close();SRV.es=null}render()}
+function srvSignOut(){try{localStorage.removeItem(KEY+':token');localStorage.removeItem(LOGIN_KEY);sessionStorage.removeItem(KEY+':me')}catch(e){}SRV.token='';SRV.stage='login';ui.pubLogin=null;LOGGED=false;if(SRV.es){SRV.es.close();SRV.es=null}render();if(!IS_APK)pubHomeLoad()}
 async function enterApp(user,token){
   if(token){SRV.token=token;try{localStorage.setItem(KEY+':token',token)}catch(e){}}
   const st=await apiCall('GET','/api/state');SRV.version=st.version;
@@ -5563,7 +5594,7 @@ async function bootServer(){
   SRV.stage='boot';SRV.msg='Menghubungkan ke server…';render();
   let h;try{h=await apiCall('GET','/api/health',undefined,true)}catch(e){SRV.stage='offline';SRV.msg='Server tidak terjangkau di '+API_BASE+'.';render();return}
   if(!h.adminClaimed){SRV.stage='setup';render();return}
-  if(!SRV.token){SRV.stage='login';render();loadDemoList();return}
+  if(!SRV.token){SRV.stage='login';ui.pubLogin=null;render();loadDemoList();if(!IS_APK)pubHomeLoad();return}
   try{const me=await apiCall('GET','/api/me');await enterApp(me.user)}
   catch(e){if(e.status===401){srvSignOut()}else{SRV.stage='offline';SRV.msg=e.message;render()}}}
 const srvErr=t=>{const e=document.getElementById('lgErr');if(e)e.textContent=t;toast(t)};

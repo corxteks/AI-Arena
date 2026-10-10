@@ -69,6 +69,31 @@ export function createApp() {
     res.set('Cache-Control', 'no-store').json({ matches: out, at: Date.now() });
   }));
 
+  // Beranda publik (tanpa login): skor langsung, peringkat 10 besar, laga berikutnya, dan daftar PB. Nama dipendekkan (nama depan + inisial).
+  app.get('/api/public/home', wrap(async (_req, res) => {
+    const doc = (await query('SELECT doc FROM app_state WHERE id=1')).rows[0]?.doc || {};
+    const demo = new Set((await query('SELECT id FROM users WHERE is_demo=true')).rows.map(r => r.id));
+    const users = new Map((doc.users || []).map(u => [u.id, u]));
+    const sh = n => { const p = String(n || '').trim().split(/\s+/); return p.length > 1 ? p[0] + ' ' + p[1][0].toUpperCase() + '.' : (p[0] || '?'); };
+    const pair = ids => (ids || []).map(i => sh((users.get(i) || {}).name)).join(' & ');
+    const clubs = (doc.clubs || []).filter(c => c.status === 'approved' && !demo.has(c.leaderId));
+    const clubOf = id => (clubs.find(c => (c.members || []).includes(id)) || {}).name || '';
+    const now = Date.now();
+    const live = (doc.matches || [])
+      .filter(m => (m.status === 'playing' && now - (m.startedAt || m.t || 0) < 8 * 3600 * 1000) || (['verified', 'pending'].includes(m.status) && (m.t || 0) >= now - 6 * 3600 * 1000))
+      .map(m => ({ id: m.id, status: m.status, court: m.court, a: pair(m.teamA), b: pair(m.teamB), games: m.games || [], draw: !!m.draw, cur: m.cur ? { a: m.cur.a, b: m.cur.b } : null, t: m.t || 0 }))
+      .sort((x, y) => (x.status === 'playing' ? 0 : 1) - (y.status === 'playing' ? 0 : 1) || y.t - x.t).slice(0, 8);
+    const rank = (doc.users || [])
+      .filter(u => !u.role && !u.guest && !demo.has(u.id) && (u.played || 0) > 0)
+      .sort((a, b) => (b.elo || 0) - (a.elo || 0)).slice(0, 10)
+      .map(u => ({ n: sh(u.name), c: clubOf(u.id), elo: u.elo || 0, p: u.played || 0, w: u.wins || 0 }));
+    const next = (doc.matches || [])
+      .filter(m => m.status === 'scheduled' && (m.when || m.t || 0) >= now - 3600 * 1000)
+      .sort((a, b) => (a.when || a.t || 0) - (b.when || b.t || 0)).slice(0, 5)
+      .map(m => ({ a: pair(m.teamA), b: pair(m.teamB), court: m.court, when: m.when || m.t || 0 }));
+    res.set('Cache-Control', 'no-store').json({ live, rank, next, clubs: clubs.map(c => ({ name: c.name, n: (c.members || []).length })).slice(0, 30), at: now });
+  }));
+
   /* ---------- autentikasi ---------- */
   app.post('/api/auth/setup-admin', strict, wrap(async (req, res) => res.status(201).json(await auth.setupAdmin(req.body || {}))));
   app.post('/api/auth/login-admin', strict, wrap(async (req, res) => res.json(await auth.loginAdmin((req.body || {}).password))));
