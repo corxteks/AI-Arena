@@ -5063,6 +5063,8 @@ const A={
       logAct(`Akun dihapus: ${u.name}.`);ui.modal=null;commit(u.name+' dihapus.')}catch(e){toast(e.message)}},
   async resetAllCodes(){if(!isAdmin()||!API_BASE)return;if(!confirm('Ganti semua kode masuk yang belum terpakai (anggota, calon anggota, dan kode PB)? Kode lama langsung tidak berlaku, dan kamu perlu membagikan kode baru.'))return;
     try{const r=await apiCall('POST','/api/admin/reset-unused-codes',{});await pullIdentity();commit(`Kode diganti: ${r.users} anggota, ${r.invites} calon anggota, ${r.clubs} kode PB.`)}catch(e){toast(e.message)}},
+  pubCourt(d){PUB.court=d.v||'all';pubRender()},
+  pubFocus(d){PUB.focus=d.id||null;pubRender();window.scrollTo(0,0)},
   async pwaInstall(){if(!DEFERRED_INSTALL)return;DEFERRED_INSTALL.prompt();try{await DEFERRED_INSTALL.userChoice}catch(e){}DEFERRED_INSTALL=null;render(true)},
   async shareLink(){const url=location.origin+location.pathname,data={title:APP,text:'Buka '+APP+' di browser, tanpa perlu unduh aplikasi.',url};
     try{if(navigator.share){await navigator.share(data);return}}catch(e){if(e&&e.name==='AbortError')return}
@@ -5359,17 +5361,22 @@ async function apiCall(method,path,body,noAuth){
   return j}
 
 /* ---------- papan skor publik (tanpa login) ---------- */
-const PUB={matches:null,err:'',at:0};
+const PUB={matches:null,err:'',at:0,court:'all',focus:null};
 function vPublicLive(){
   const ms=PUB.matches,live=(ms||[]).filter(m=>m.status==='playing'),done=(ms||[]).filter(m=>m.status!=='playing');
   const gw=(m,k)=>m.games.filter(g=>k==='a'?g[0]>g[1]:g[1]>g[0]).length;
-  const card=m=>{const L=m.status==='playing';return `<article class="panel livecard"><div class="lh">${L?'<span class="chip live">LIVE</span>':`<span class="chip ok">${m.draw?'Seri':'Selesai'}</span>`}<b>${esc(m.court||'')}</b><span class="small muted">${esc(m.club||'')}</span></div>
-    ${['a','b'].map(k=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:4px 0"><span style="font-weight:600">${esc(m[k])}</span><b class="num" style="font-size:24px">${L&&m.cur?m.cur[k]:m.draw&&m.games.length?m.games[m.games.length-1][k==='a'?0:1]:gw(m,k)}</b></div>`).join('')}
+  const card=(m,F)=>{const L=m.status==='playing',fs=F?'46px':'24px';return `<article class="panel livecard" ${F?'':`data-act="pubFocus" data-id="${esc(m.id)}" role="button" tabindex="0" style="cursor:pointer"`}><div class="lh">${L?'<span class="chip live">LIVE</span>':`<span class="chip ok">${m.draw?'Seri':'Selesai'}</span>`}<b>${esc(m.court||'')}</b><span class="small muted">${esc(m.club||'')}</span></div>
+    ${['a','b'].map(k=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:4px 0"><span style="font-weight:600">${esc(m[k])}</span><b class="num" style="font-size:${fs}">${L&&m.cur?m.cur[k]:m.draw&&m.games.length?m.games[m.games.length-1][k==='a'?0:1]:gw(m,k)}</b></div>`).join('')}
     ${m.games.length?`<div class="small muted">Gim: ${m.games.map(g=>g.join('–')).join(', ')}${L&&m.cur?` · gim berjalan ${m.cur.a}–${m.cur.b}`:''}</div>`:''}
     ${L&&m.video&&m.peer?`<div class="video" style="margin-top:8px"><div class="vslot" data-vslot="view:pub-${esc(m.id)}" data-peer="${esc(m.peer)}"></div><div class="vstat" data-vstat="view:pub-${esc(m.id)}"></div></div>`:''}</article>`};
+  const courts=[...new Set((ms||[]).map(m=>m.court).filter(Boolean))].sort();
+  const chips=courts.length>1?`<div class="fchips" role="group" aria-label="Pilih lapangan" style="justify-content:center;margin:0 0 10px"><button class="fchip" aria-pressed="${PUB.court==='all'}" data-act="pubCourt" data-v="all">Semua</button>${courts.map(c=>`<button class="fchip" aria-pressed="${PUB.court===c}" data-act="pubCourt" data-v="${esc(c)}">${esc(c)}${live.some(m=>m.court===c)?' ●':''}</button>`).join('')}</div>`:'';
+  const inC=m=>PUB.court==='all'||m.court===PUB.court;
+  const fm=PUB.focus&&(ms||[]).find(m=>m.id===PUB.focus);
+  if(fm)return `<main class="shell enter loginp"><p style="text-align:center;margin:0 0 8px"><button class="btn sm ghost" data-act="pubFocus" data-id="">‹ Semua pertandingan</button></p>${card(fm,true)}<p class="small muted" style="text-align:center">Diperbarui otomatis${PUB.at?' (terakhir '+new Date(PUB.at).toLocaleTimeString('id-ID')+')':''}.</p></main>`;
   const body=PUB.err?`<div class="panel"><p class="small" style="margin:6px 0">${esc(PUB.err)}</p></div>`:ms===null?'<div class="panel"><p class="muted small" style="margin:6px 0">Memuat skor…</p></div>':
-    `<section class="sec"><h2>Sedang berlangsung</h2>${live.length?live.map(card).join(''):'<div class="panel"><p class="muted small" style="margin:6px 0">Belum ada pertandingan yang berlangsung.</p></div>'}</section>${done.length?`<section class="sec"><h2>Baru selesai</h2>${done.slice(0,10).map(card).join('')}</section>`:''}`;
-  return `<main class="shell enter loginp"><div class="lg-logo"><img src="${LOGO_SRC}" alt="AI Arena"></div><h1 class="lg-h">Skor langsung</h1><p class="small muted lg-p">${APP}. Terbuka untuk semua orang, tanpa perlu masuk. Diperbarui otomatis${PUB.at?' (terakhir '+new Date(PUB.at).toLocaleTimeString('id-ID')+')':''}.</p>${body}<p style="text-align:center;margin-top:14px"><a class="btn ghost" href="${location.pathname}">Buka aplikasi</a></p></main>`}
+    `<section class="sec"><h2>Sedang berlangsung</h2>${live.filter(inC).length?live.filter(inC).map(m=>card(m)).join(''):'<div class="panel"><p class="muted small" style="margin:6px 0">Belum ada pertandingan yang berlangsung.</p></div>'}</section>${done.filter(inC).length?`<section class="sec"><h2>Baru selesai</h2>${done.filter(inC).slice(0,10).map(m=>card(m)).join('')}</section>`:''}`;
+  return `<main class="shell enter loginp"><div class="lg-logo"><img src="${LOGO_SRC}" alt="AI Arena"></div><h1 class="lg-h">Skor langsung</h1><p class="small muted lg-p">${APP}. Pilih lapangan atau ketuk laga untuk memperbesar. Terbuka untuk semua orang, tanpa perlu masuk. Diperbarui otomatis${PUB.at?' (terakhir '+new Date(PUB.at).toLocaleTimeString('id-ID')+')':''}.</p>${chips}${body}<p style="text-align:center;margin-top:14px"><a class="btn ghost" href="${location.pathname}">Buka aplikasi</a></p></main>`}
 function pubRender(){const a=document.getElementById('app');if(a){a.innerHTML=vPublicLive();try{attachLive()}catch(e){}}}
 async function pubLoad(){try{const r=await apiCall('GET','/api/public/live',undefined,true);PUB.matches=r.matches||[];PUB.err='';PUB.at=Date.now()}catch(e){if(PUB.matches===null)PUB.err='Skor belum bisa dimuat. Coba lagi sebentar lagi.'}pubRender()}
 function startPublicLive(){if(!API_BASE){document.getElementById('app').innerHTML='<main class="shell enter"><h1 class="lg-h">Skor langsung</h1><p class="small muted lg-p">Skor langsung hanya tersedia saat tersambung ke server.</p></main>';return}
