@@ -54,7 +54,8 @@ export function createApp() {
     const club = new Map((doc.clubs || []).map(c => [c.id, c.name]));
     const since = Date.now() - 6 * 3600 * 1000;
     const out = (doc.matches || [])
-      .filter(m => m.status === 'playing' || (['verified', 'pending'].includes(m.status) && (m.t || 0) >= since))
+      // laga 'berlangsung' yang tidak bergerak lebih dari 8 jam dianggap tertahan dan tidak ditampilkan
+      .filter(m => (m.status === 'playing' && Date.now() - (m.startedAt || m.t || 0) < 8 * 3600 * 1000) || (['verified', 'pending'].includes(m.status) && (m.t || 0) >= since))
       .map(m => ({
         id: m.id, status: m.status, court: m.court, club: club.get(m.clubId) || '',
         a: names(m.teamA), b: names(m.teamB), games: m.games || [], draw: !!m.draw,

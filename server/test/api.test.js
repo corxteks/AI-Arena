@@ -628,3 +628,14 @@ test('YouTube: ketua dan wasit laga boleh mengelola siaran lagannya, orang lain 
   assert.equal(rd.status, 200);
   assert.equal(typeof rd.body.ready, 'boolean');
 });
+
+test('papan skor publik: laga berlangsung yang tertahan lebih dari 8 jam tidak ditampilkan', async () => {
+  const adminToken = await setup();
+  const st = await api('GET', '/api/state', undefined, adminToken);
+  const now = Date.now();
+  const mk = (id, t) => ({ id, status: 'playing', court: 'L1', teamA: [], teamB: [], games: [], cur: { a: 0, b: 0 }, t, startedAt: t });
+  const doc = { ...(st.body.doc || {}), matches: [mk('baru', now - 1000), mk('macet', now - 100 * 3600 * 1000)] };
+  assert.equal((await api('PUT', '/api/state', { baseVersion: st.body.version, doc }, adminToken)).status, 200);
+  const ids = (await api('GET', '/api/public/live')).body.matches.map(m => m.id);
+  assert.deepEqual(ids, ['baru']);
+});

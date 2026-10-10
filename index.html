@@ -3697,7 +3697,7 @@ const annVisible=(a,cs)=>(!a.at||a.sent)&&(!a.to||a.to==='all'||(cs||[]).some(c=
 const annSort=l=>l.slice().sort((a,b)=>(b.pin?1:0)-(a.pin?1:0)||b.t-a.t);
 function vCourtStrip(){return `<div class="hm-strip" aria-label="Kondisi lapangan">${COURTS.map(c=>{const pl=S.matches.find(m=>m.court===c&&m.status==='playing');return `<span class="hm-dot ${pl?'on':'off'}"></span><span class="hm-cn">${c.replace('Lapangan ','Lap. ')} ${pl?'dipakai':'kosong'}</span>`}).join('')}</div>`}
 function vMemberLive(){
-  const live=S.matches.filter(m=>m.status==='playing'),now=Date.now();
+  const live=S.matches.filter(m=>m.status==='playing'&&Date.now()-(m.startedAt||m.t||0)<8*36e5),now=Date.now();
   return `${banner(4,'Siaran','Skor langsung dan siaran pertandingan')}
   <section class="sec">${live.length?live.map(m=>`<article class="panel livecard"><div class="lh"><span class="chip live">LIVE</span><b>${esc(m.court)}</b><span class="small muted">${durTxt(now-(m.stream&&m.stream.started||m.startedAt||m.t))}</span></div><div class="lscore"><b>${esc(names(m.teamA))}</b> <span class="vs">vs</span> <b>${esc(names(m.teamB))}</b></div>${m.cur?`<div class="small muted">Skor ${m.cur.a}–${m.cur.b}${m.games.length?' (gim: '+m.games.map(g=>g.join('–')).join(', ')+')':''}</div>`:''}${m.stream&&!m.stream.ended?`<div class="lacts"><button class="btn xs cork" data-act="watch" data-id="${m.id}">Tonton</button></div>`:'<div class="small muted">Tanpa video, skor diperbarui otomatis.</div>'}</article>`).join(''):'<div class="panel"><p class="muted small" style="margin:6px 0">Belum ada siaran langsung saat ini.</p></div>'}</section>`;
 }
@@ -5136,7 +5136,7 @@ const A={
   undo(){const m=match(ui.matchId);if(!m.undo)return;const p=JSON.parse(m.undo);m.cur=p.cur;m.games=p.games;m.undo=null;logSnap(m);commit('Poin terakhir dibatalkan.')},
   endDraw(){const m=match(ui.matchId);if(!m||winner(m)||m.draw||m.tourneyId||m.leagueId)return;if(m.umpireId!==ME&&!isAdmin())return;
     if(!confirm('Akhiri pertandingan dengan hasil seri? Skor yang sudah ada tetap dicatat.'))return;
-    const c=m.cur;if(c&&c.a+c.b>0)m.games.push([c.a,c.b]);if(!m.games.length)return toast('Belum ada poin. Mainkan dulu atau batalkan pertandingan.');
+    const c=m.cur;if(c&&c.a+c.b>0)m.games.push([c.a,c.b]);if(!m.games.length){ui.view=null;ui.modal={type:'voidM',id:m.id,mode:'cancel'};render();return toast('Belum ada poin, jadi tidak bisa seri. Batalkan laga ini kalau memang tidak jadi dimainkan.')}
     m.cur=null;m.draw=true;commit('Pertandingan diakhiri seri. Tekan Kirim skor untuk verifikasi.')},
   submitScore(){const m=match(ui.matchId);if(!winner(m)&&!m.draw)return;m.status='pending';m.undo=null;m.t=Date.now();m.submittedAt=Date.now();
     if(m.stream&&!m.stream.ended){m.stream.ended=true;m.stream.endedAt=Date.now();quota().used+=END_COST}
