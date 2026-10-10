@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET;
   if (secret && req.headers.authorization !== `Bearer ${secret}`) return res.status(401).json({ error: 'unauthorized' });
 
-  const token = process.env.BACKUP_TOKEN, repo = process.env.BACKUP_REPO;
+  const token = (process.env.BACKUP_TOKEN || '').trim(), repo = process.env.BACKUP_REPO;
   if (!token || !repo) return res.status(500).json({ error: 'BACKUP_TOKEN/BACKUP_REPO belum diatur (repo cadangan harus privat).' });
 
   const tables = ['users', 'clubs', 'club_members', 'invites', 'app_state', 'streams', 'settings'];
@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     body: JSON.stringify({ message: `Cadangan otomatis ${day}`, content }),
   });
   const body = await r.json().catch(() => ({}));
-  if (!r.ok) console.error('Cadangan gagal:', r.status, body.message || '');
+  if (!r.ok) console.error('Cadangan gagal:', r.status, body.message || '', `| token panjang=${token.length} awalan=${token.slice(0, 11)} spasi=${token !== token.trim()} repo=${repo}`);
   if (!r.ok) return res.status(502).json({ error: 'Gagal menyimpan ke GitHub: ' + (body.message || r.status) });
   res.json({ ok: true, path, tables: Object.fromEntries(tables.map(t => [t, dump[t].length])) });
 }
