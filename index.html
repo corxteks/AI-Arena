@@ -3709,6 +3709,7 @@ function vMenu(){
   rows.push(it('club','GOR','Jadwal tetap dan lapangan','data-act="tab" data-t="club"','t'));
   if(admin)rows.push(it('user','Profil','Foto, nama, dan kontak akun','data-act="openAkun"','a'));
   if(admin&&API_BASE)rows.push(it('shield','Atur kata sandi','Kata sandi untuk masuk sebagai pengelola di perangkat lain','data-act="openModal" data-m="setAdminPw"','r'));
+  if(!admin)rows.push(it('chat','Lapor masalah','Kirim kendala atau saran ke pengelola GOR','data-act="openModal" data-m="reportIssue"','r'));
   if(!admin)rows.push(it('user','Profil saya','Rating, riwayat, dan statistik',`data-act="profile" data-id="${ME}"`,'b'));
   const roleSw=`<section class="sec"><p class="small muted">Masuk sebagai <b>${esc(u.name)}</b>, ${esc(roleLabel(u))}.</p><button class="btn sm ghost" data-act="logout">Keluar</button></section>`;
   const tp=themePref(),themeSw=`<div class="tsw" role="group" aria-label="Tampilan">${[['light','Terang'],['dark','Gelap'],['auto','Otomatis']].map(x=>`<button aria-pressed="${tp===x[0]}" data-act="setTheme" data-th="${x[0]}">${x[1]}</button>`).join('')}</div>`;
@@ -3981,6 +3982,11 @@ function confirmHtml(){const c=ui.confirm;if(!c)return '';return `<div class="sc
 function vModal(){
   const M=ui.modal; if(!M)return confirmHtml();
   if(M.type==='photo'){const p=S.gallery.find(x=>x.id===M.id);if(!p){ui.modal=null;return ''}return vLightbox(p)}
+  if(M.type==='reportIssue'){
+    const h=`<h2>Lapor masalah</h2><p class="small muted">Ceritakan kendala atau saran. Laporan masuk ke notifikasi pengelola GOR.</p>
+    <label for="rpTxt">Isi laporan</label><textarea id="rpTxt" maxlength="400" placeholder="Contoh: skor laga kemarin tidak masuk"></textarea>
+    <div class="two rbtn"><button class="btn ghost" data-act="closeModal">Batal</button><button class="btn" data-act="sendIssue">Kirim</button></div>`;
+    return `<div class="scrim" data-act="scrimClose"><div class="sheet sm">${h}</div></div>`}
   if(M.type==='setAdminPw'){
     const h=`<h2>Atur kata sandi pengelola</h2><p class="small muted">Dipakai untuk masuk sebagai Super User di perangkat lain, lewat "Masuk sebagai pengelola GOR" di layar Masuk.</p>
     <label for="apw1">Kata sandi baru</label><input id="apw1" type="password" autocomplete="new-password" maxlength="100"><label for="apw2">Ulangi kata sandi</label><input id="apw2" type="password" autocomplete="new-password" maxlength="100">
@@ -5011,6 +5017,7 @@ const A={
   tourSkip(){me().tourDone=true;ui.modal=null;commit()},
   tourFinish(){me().tourDone=true;ui.modal=null;commit()},
   loginAdmin(){const a=S.users.find(x=>x.role==='superadmin');if(!a)return;setMe(a.id);ui={...ui,tab:'home',view:null,modal:null};commit('Selamat datang kembali, '+a.name+'.')},
+  sendIssue(){const t=val('rpTxt').trim();if(t.length<5)return toast('Tulis laporan minimal 5 huruf.');notify(admins(),`Laporan dari ${first(ME)}: ${t.slice(0,300)}`,{tab:'home'});ui.modal=null;commit('Laporan terkirim ke pengelola GOR.')},
   async setAdminPw(){const p1=val('apw1'),p2=val('apw2');if(p1.length<8)return toast('Kata sandi minimal 8 karakter.');if(p1!==p2)return toast('Kata sandi dan ulangannya tidak sama.');
     try{await apiCall('POST','/api/auth/set-admin-password',{password:p1});ui.modal=null;commit('Kata sandi pengelola disimpan.')}catch(e){toast(e.message)}},
   lgAdmin(){ui.lgAdmin=true;render()},
