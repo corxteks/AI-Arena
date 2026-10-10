@@ -4374,8 +4374,8 @@ function vModal(){
     const {cl,ang,habis,akhir}=memberInfo(g),ket=(g.list.find(x=>x.ketua)||{}).ketua||(cl&&user(cl.leaderId)?user(cl.leaderId).name:'-');
     h=`<h2>${esc(g.name)}</h2><p class="small muted">${habis?'<span class="chip bad">Berakhir</span> ':akhir?'<span class="chip warn">Minggu terakhir</span> ':''}${g.list.length>1?`<span class="chip warn">${g.list.length} jadwal</span> `:''}${ang.length} anggota${cl?`, ELO PB ${clubElo(cl)}`:''}</p>
     <p class="small" style="margin:2px 0 6px"><span class="muted">Ketua:</span> <b>${esc(ket)}</b>${(g.list.find(x=>x.hp)||{}).hp?' · <a href="tel:'+esc(g.list.find(x=>x.hp).hp)+'">'+esc(g.list.find(x=>x.hp).hp)+'</a>':''}</p>
-    <div class="small muted dlab">Jadwal</div>${g.list.slice().sort((x,y)=>x.day-y.day||timeMin(x.time)-timeMin(y.time)).map(x=>`<div class="row"><div class="jr"><b>${HARI[x.day]} ${esc(x.time)}</b><span>${esc(x.court)}</span>${x.fee?`<span class="small muted">${rp(x.fee)}</span>${payChip(x)}`:''}<span class="small muted">${sdate(x.start)}–${sdate(x.end)}${x.end<Date.now()?' (berakhir)':''}</span></div></div>`).join('')}
-    <div class="small muted dlab">Anggota</div>${ang.length?`<div class="agrid">${ang.map(u=>`<div class="ag">${avatar(u.id,'sm')}<span>${esc(u.name)}${cl.leaderId===u.id?' <i class="chip ok">K</i>':''}</span></div>`).join('')}</div>`:'<p class="muted small">Belum ada anggota terdaftar.</p>'}
+    <div class="small muted dlab">Jadwal</div>${g.list.slice().sort((x,y)=>x.day-y.day||timeMin(x.time)-timeMin(y.time)).map(x=>`<div class="row"><div class="jr"><b>${HARI[x.day]} ${esc(x.time)}</b><span>${esc(x.court)}</span>${x.fee?`<span class="small muted">${rp(x.fee)}</span>${payChip(x)}`:''}<span class="small muted">${sdate(x.start)}–${sdate(x.end)}${x.end<Date.now()?' (berakhir)':''}</span></div><button class="btn xs danger" data-act="delCourtSched" data-id="${x.id}">Hapus</button></div>`).join('')}
+    <div class="small muted dlab">Anggota</div>${ang.length?`<div class="agrid">${ang.map(u=>`<div class="ag">${avatar(u.id,'sm')}<span>${esc(u.name)}${cl.leaderId===u.id?' <i class="chip ok">K</i>':''}</span>${cl.leaderId!==u.id?`<button class="btn xs danger" data-act="openModal" data-m="kickMember" data-id="${cl.id}" data-uid="${u.id}">Keluarkan</button>`:''}</div>`).join('')}</div>`:'<p class="muted small">Belum ada anggota terdaftar.</p>'}
     <div class="two rbtn">${cl?`<button class="btn" data-act="openRoom" data-id="club:${cl.id}">Buka lounge</button>`:'<span></span>'}<button class="btn ghost" data-act="closeModal">Tutup</button></div>`;
   }else if(M.type==='rate'){
     const u=user(M.id),g=skillOf(u.elo),log=(u.ratingLog||[]).slice(-3).reverse(),pb=clubsOf(u.id)[0];
@@ -4393,11 +4393,11 @@ function vModal(){
     <label for="edHp">Contact Person</label><input id="edHp" type="tel" inputmode="tel" placeholder="Contoh: 081234567890" value="${esc(x.hp||'')}">
     <div class="srow" style="margin-top:8px"><select id="edCourt" aria-label="Lapangan">${COURTS.map(c=>`<option ${c===x.court?'selected':''}>${c}</option>`).join('')}</select><select id="edDay" aria-label="Hari">${HARI.map((d,i)=>`<option value="${i}" ${i===x.day?'selected':''}>${d}</option>`).join('')}</select><input id="edTime" type="time" value="${esc(x.time)}" aria-label="Jam mulai"><span></span></div>
     <label for="edFee">Iuran (Rp)</label><input id="edFee" type="number" min="0" step="1000" value="${x.fee||''}">
-    <div class="two rbtn"><button class="btn" data-act="saveEditSched" data-id="${x.id}">Simpan perubahan</button><button class="btn ghost" data-act="closeModal">Batal</button></div>`;
+    <div class="two rbtn"><button class="btn" data-act="saveEditSched" data-id="${x.id}">Simpan perubahan</button><button class="btn ghost" data-act="closeModal">Batal</button></div><button class="btn danger full" style="margin-top:8px" data-act="delCourtSched" data-id="${x.id}">Hapus jadwal ini</button>`;
   }else if(M.type==='slot'){
     const l=cellEntries(M.court,M.day).sort((a,b)=>timeMin(a.time)-timeMin(b.time)),bad=cellClash(l);
     h=`<h2>${esc(M.court)}, ${HARI[M.day]}</h2>${bad?'<p class="small"><span class="chip bad">Bentrok</span> Ada jadwal yang waktunya saling tumpang tindih.</p>':''}
-    ${l.length?l.map(x=>`<div class="row"><div class="grow"><b>${esc(x.name)}</b> ${x.time}<div class="small muted">Ketua ${esc(x.ketua||'-')}${x.hp?' ('+esc(x.hp)+')':''}${x.fee?', '+rp(x.fee):''} ${payChip(x)}</div></div><button class="btn xs ghost" data-act="openModal" data-m="editSched" data-id="${x.id}">Ubah</button></div>`).join(''):'<p class="muted">Slot ini masih kosong.</p>'}
+    ${l.length?l.map(x=>`<div class="row"><div class="grow"><b>${esc(x.name)}</b> ${x.time}<div class="small muted">Ketua ${esc(x.ketua||'-')}${x.hp?' ('+esc(x.hp)+')':''}${x.fee?', '+rp(x.fee):''} ${payChip(x)}</div></div><button class="btn xs ghost" data-act="openModal" data-m="editSched" data-id="${x.id}">Ubah</button><button class="btn xs danger" data-act="delCourtSched" data-id="${x.id}">Hapus</button></div>`).join(''):'<p class="muted">Slot ini masih kosong.</p>'}
     <button class="btn full" style="margin-top:10px" data-act="openModal" data-m="schedTetap" data-court="${esc(M.court)}" data-day="${M.day}">+ Tambah jadwal di slot ini</button>`;
   }else if(M.type==='clubSched'){
     const c=club(M.id);
@@ -5201,7 +5201,7 @@ const A={
     notify(u.id,`Pengelola GOR menempatkanmu di Kelompok ${skillOf(to).k} (ELO ${to}).`,{tab:'home',self:true});ui.modal=null;commit(`${esc(u.name)} dinilai: Kelompok ${skillOf(to).k}, ELO ${to}.`)},
   loadDummy(){if(!isAdmin())return;if(S.users.some(u=>!u.role)&&!confirm('Data pemain sudah ada. Tambahkan data contoh di atasnya?'))return;dummyData();commit('Data contoh ditambahkan: 12 pemain, 3 PB, 30 laga, jadwal, galeri, dan obrolan.')},
   delCourtSched(d){if(!isAdmin())return;if(!confirm('Hapus jadwal ini?'))return;const dx=S.courtSched.find(e=>e.id===d.id);if(dx)logAct(`Jadwal dihapus: ${dx.name}, ${dx.court}, ${HARI[dx.day]} ${dx.time}.`);
-    S.courtSched=S.courtSched.filter(x=>x.id!==d.id);commit('Jadwal dihapus.')},
+    S.courtSched=S.courtSched.filter(x=>x.id!==d.id);ui.modal=null;commit('Jadwal dihapus.')},
 };
 
 /* ---------- events ---------- */
