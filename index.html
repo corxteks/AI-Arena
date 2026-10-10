@@ -4410,6 +4410,7 @@ function vModal(){
     <div class="two rbtn"><button class="btn danger" data-act="phoneStop" data-id="${m.id}">Akhiri siaran</button><button class="btn ghost" data-act="closeModal">Tutup (siaran tetap jalan)</button></div>`
     :`<h2>Siarkan dari HP</h2><p class="small muted">${esc(names(m.teamA))} vs ${esc(names(m.teamB))}, ${esc(m.court)}</p>
     <ul class="small" style="padding-left:18px;margin:6px 0 10px"><li>Kamera dan mikrofon HP ini dipakai untuk siaran. Izinkan saat diminta.</li><li>Siapa saja bisa menonton lewat halaman Siaran atau tautan skor langsung (maks ${PHONE_MAX_VIEWERS} penonton sekaligus).</li><li>Pakai Wi-Fi atau sinyal kuat. Kualitas otomatis dibatasi supaya hemat kuota.</li><li>Jangan tutup halaman ini selama siaran berjalan.</li></ul>
+    <div class="panel" style="margin:8px 0"><div class="row"><div class="grow"><b>Izin kamera dan mikrofon</b><div class="small muted" id="permInfo">Memeriksa…</div></div><button class="btn xs" data-act="phonePerm">Izinkan</button></div></div>
     <div class="two rbtn"><button class="btn" data-act="phoneGo" data-id="${m.id}">Mulai siaran</button><button class="btn ghost" data-act="closeModal">Batal</button></div>`;
   }else if(M.type==='golive'){
     const m=match(M.id), st=M.step;
@@ -4767,6 +4768,7 @@ const A={
     (S.tvs=S.tvs||{})[c]={name:'TV '+c,since:Date.now(),seen:Date.now(),by:ME};logAct(`TV dihubungkan ke ${c}.`);ui.modal=null;commit('TV terhubung ke '+c+'.')},
   unpairTv(d){if(!isAdmin())return;if(S.tvs)delete S.tvs[d.court];logAct(`TV diputus dari ${d.court}.`);ui.modal=null;commit('TV diputus dari '+d.court+'.')},
   phoneGo(d){phoneStart(d.id)},
+  phonePerm(){phonePerm()},
   ytGo(d){ytGo(d.id)},
   ytCancel(d){if(!confirm('Batalkan siaran ini? Kunci siaran jadi tidak berlaku.'))return;ytStop(d.id,'Siaran dibatalkan.')},
   ytCopy(d){const v=d.k==='addr'?ui.modal.addr:ui.modal.key;try{navigator.clipboard.writeText(v||'');toast('Disalin.')}catch(e){toast('Salin manual dari kotak di atas.')}},
@@ -5454,6 +5456,17 @@ async function phoneStart(id){
     LIVE.local=null;LIVE.peer=null;toast(e&&e.name&&/NotAllowed|NotFound|NotReadable/.test(e.name)?camErr(e):(e&&e.message)||'Siaran gagal dimulai.');
   }finally{LIVE.starting=false}
 }
+
+async function permRefresh(){const el=document.getElementById('permInfo');if(!el)return;
+  const q=async n=>{try{return (await navigator.permissions.query({name:n})).state}catch(e){return 'unknown'}};
+  const [c,m]=[await q('camera'),await q('microphone')];const lab={granted:'Diizinkan',denied:'Ditolak',prompt:'Belum diminta',unknown:'Belum diketahui'};
+  const el2=document.getElementById('permInfo');if(!el2)return;
+  el2.innerHTML='Kamera: <b>'+lab[c]+'</b> · Mikrofon: <b>'+lab[m]+'</b>'+((c==='denied'||m==='denied')?'<br>Ditolak sebelumnya. Android: Pengaturan, Aplikasi, AI ARENA (atau Chrome), Izin, aktifkan Kamera dan Mikrofon. Di browser: ketuk ikon gembok di sebelah alamat, lalu izinkan.':'')}
+async function phonePerm(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return toast('Browser ini tidak mendukung kamera. Pakai Chrome (Android) atau Safari (iPhone) lewat https.');
+  try{const st=await navigator.mediaDevices.getUserMedia({video:true,audio:true});st.getTracks().forEach(t=>t.stop());toast('Izin kamera dan mikrofon sudah diberikan.')}
+  catch(e){toast(camErr(e))}
+  permRefresh()}
 function phoneStop(id,silent){
   try{LIVE.local&&LIVE.local.getTracks().forEach(t=>t.stop())}catch(e){}try{LIVE.calls.forEach(c=>c.close())}catch(e){}try{LIVE.peer&&LIVE.peer.destroy()}catch(e){}
   try{LIVE.wake&&LIVE.wake.release()}catch(e){}clearInterval(LIVE.beat);LIVE.local=null;LIVE.peer=null;LIVE.calls=[];LIVE.wake=null;LIVE.matchId=null;delete LIVE.els['self:'+id];
@@ -5476,7 +5489,7 @@ function setStat(key){document.querySelectorAll('[data-vstat="'+key+'"]').forEac
 function attachLive(){
   document.querySelectorAll('[data-vslot]').forEach(slot=>{const key=slot.dataset.vslot;if(key.startsWith('yt:'))return;const el=liveEl(key);slot.replaceWith(el);if(el.srcObject)el.play().catch(()=>{});
     if(key.startsWith('view:')){const peerId=slot.dataset.peer,st=LIVE.view[key];if(peerId&&(!st||st.state==='idle'||st.peerId!==peerId))phoneView(key,peerId);setStat(key)}});
-  document.querySelectorAll('[data-selfv]').forEach(h=>{const el=LIVE.els['self:'+h.dataset.selfv];if(el){h.appendChild(el);el.play().catch(()=>{})}});try{ytSync()}catch(e){}}
+  document.querySelectorAll('[data-selfv]').forEach(h=>{const el=LIVE.els['self:'+h.dataset.selfv];if(el){h.appendChild(el);el.play().catch(()=>{})}});try{ytSync()}catch(e){}try{if(ui.modal&&ui.modal.type==='phoneLive')permRefresh()}catch(e){}}
 setInterval(()=>{try{Object.keys(LIVE.view).forEach(k=>{const st=LIVE.view[k];if(st.state==='idle'&&st.peerId&&document.contains(liveEl(k)))phoneView(k,st.peerId)})}catch(e){}},5000);
 
 /* ---------- siaran YouTube: iframe tetap, dipasang di atas slot video ---------- */
