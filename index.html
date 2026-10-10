@@ -2448,6 +2448,10 @@ body .row:has(>.h2hb)>.linkbtn .chip{font-size:10px!important;padding:1px 6px!im
 .selfv .livevid{position:absolute;inset:0;width:100%;height:100%}
 .video .ov,.video .vtag,.video .vnote,.video .fsbtn,.video .vstat{z-index:2}
 .wfs2 .wtop2,.wfs2 .wchat2{z-index:2}
+.welcome{position:fixed;inset:0;z-index:200;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:24px 20px calc(24px + env(safe-area-inset-bottom,0px));text-align:center;overflow:auto}
+.welcome .wl-logo{width:min(84vw,400px);max-height:62vh;height:auto;object-fit:contain;display:block;animation:wlin .5s ease both}
+.welcome .wl-btn{margin-top:20px;min-width:220px;padding:14px 30px;font-size:17px;border-radius:999px}
+@keyframes wlin{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
 </style>
 </head>
 <body>
@@ -2460,6 +2464,9 @@ const PROD_API='https://ai-arena-lovat.vercel.app';
 let DEFERRED_INSTALL=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();DEFERRED_INSTALL=e;try{if(typeof SRV!=='undefined'&&SRV.stage!=='app')render(true)}catch(x){}});
 try{if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}
+const WELCOME_KEY='ai-arena-welcome';
+const welcomed=()=>{try{return sessionStorage.getItem(WELCOME_KEY)==='1'}catch(e){return true}};
+const vWelcome=()=>`<main class="welcome"><img class="wl-logo" src="logo-besar.jpg" alt="AI Badminton Arena" width="720" height="794"><button class="btn wl-btn" data-act="welcomeGo">Lanjutkan</button></main>`;
 const PUBLIC_LIVE=/[?&]live(=|&|$)/.test(location.search)||location.hash==='#live';
 const API_BASE=(()=>{try{
   const q=new URLSearchParams(location.search).get('api');
@@ -4598,7 +4605,8 @@ function demoNote(){return `<div class="demo">Mode prototipe: data demo sudah di
 
 /* ---------- render ---------- */
 function applyBg(){document.body.classList.add('has-photo')}
-function render(preserve){if(PUBLIC_LIVE){pubRender();return}applyBg();ESTC={};{const vk=[ui.tab,ui.view,ui.mTab,ui.chatT,ui.room,ui.tourId,ui.courtPage,ui.cpId,ui.matchId].join('|');document.documentElement.toggleAttribute('data-rf',!!preserve||vk===window.__vk);window.__vk=vk}
+function render(preserve){if(PUBLIC_LIVE){pubRender();return}
+  if(API_BASE&&!FORCE_LOGIN&&!welcomed()&&(SRV.stage==='login'||SRV.stage==='app')){const a0=document.getElementById('app');if(!a0.querySelector('.welcome'))a0.innerHTML=vWelcome();return}applyBg();ESTC={};{const vk=[ui.tab,ui.view,ui.mTab,ui.chatT,ui.room,ui.tourId,ui.courtPage,ui.cpId,ui.matchId].join('|');document.documentElement.toggleAttribute('data-rf',!!preserve||vk===window.__vk);window.__vk=vk}
   const keep=preserve?[...document.querySelectorAll('input[id]:not([type=file]),textarea[id],select[id]')].map(e=>[e.id,e.type==='checkbox'?e.checked:e.value]):[];
   const focus=preserve&&document.activeElement?document.activeElement.id:null;
   tick();saveUi();
@@ -5091,6 +5099,7 @@ const A={
       logAct(`Akun dihapus: ${u.name}.`);ui.modal=null;commit(u.name+' dihapus.')}catch(e){toast(e.message)}},
   async resetAllCodes(){if(!isAdmin()||!API_BASE)return;if(!confirm('Ganti semua kode masuk yang belum terpakai (anggota, calon anggota, dan kode PB)? Kode lama langsung tidak berlaku, dan kamu perlu membagikan kode baru.'))return;
     try{const r=await apiCall('POST','/api/admin/reset-unused-codes',{});await pullIdentity();commit(`Kode diganti: ${r.users} anggota, ${r.invites} calon anggota, ${r.clubs} kode PB.`)}catch(e){toast(e.message)}},
+  welcomeGo(){try{sessionStorage.setItem(WELCOME_KEY,'1')}catch(e){}render();window.scrollTo(0,0)},
   pubMasuk(){ui.pubLogin='masuk';render();window.scrollTo(0,0)},
   pubDaftar(){ui.pubLogin='daftar';ui.lgReg='form';render();window.scrollTo(0,0)},
   pubBack(){ui.pubLogin=null;ui.lgReg=null;ui.lgAdmin=false;render();window.scrollTo(0,0)},
