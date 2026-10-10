@@ -59,7 +59,8 @@ export function createApp() {
         id: m.id, status: m.status, court: m.court, club: club.get(m.clubId) || '',
         a: names(m.teamA), b: names(m.teamB), games: m.games || [], draw: !!m.draw,
         cur: m.cur ? { a: m.cur.a, b: m.cur.b } : null, t: m.t || 0,
-        video: !!(m.stream && !m.stream.ended),
+        video: !!(m.stream && !m.stream.ended && (m.stream.mode !== 'phone' || Date.now() - (m.stream.beat || m.stream.started || 0) < 60000)),
+        peer: m.stream && m.stream.mode === 'phone' && !m.stream.ended ? String(m.stream.peerId || '').slice(0, 80) : null,
       }))
       .sort((x, y) => (x.status === 'playing' ? 0 : 1) - (y.status === 'playing' ? 0 : 1) || y.t - x.t)
       .slice(0, 30);

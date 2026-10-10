@@ -589,3 +589,17 @@ test('papan skor publik: tanpa login, hanya nama dan skor laga berlangsung/terba
   assert.equal(r.body.matches[0].a, 'Andi');
   assert.ok(!JSON.stringify(r.body).includes('0811'));
 });
+
+test('papan skor publik: siaran HP hanya muncul bila masih segar dan membawa peerId', async () => {
+  const adminToken = await setup();
+  const st = await api('GET', '/api/state', undefined, adminToken);
+  const now = Date.now();
+  const mk = (id, beat) => ({ id, status: 'playing', court: 'L1', teamA: [], teamB: [], games: [], cur: { a: 1, b: 1 }, t: now, stream: { mode: 'phone', peerId: 'aiarena-' + id, started: now - 99999, beat, ended: false } });
+  const doc = { ...(st.body.doc || {}), matches: [mk('fresh', now), mk('stale', now - 120000)] };
+  assert.equal((await api('PUT', '/api/state', { baseVersion: st.body.version, doc }, adminToken)).status, 200);
+  const r = (await api('GET', '/api/public/live')).body.matches;
+  const by = id => r.find(m => m.id === id);
+  assert.equal(by('fresh').video, true);
+  assert.equal(by('fresh').peer, 'aiarena-fresh');
+  assert.equal(by('stale').video, false);
+});
