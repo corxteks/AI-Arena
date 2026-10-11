@@ -5440,6 +5440,10 @@ const ICE={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l
 const isPhone=m=>!!(m&&m.stream&&m.stream.mode==='phone'&&!m.stream.ended);
 function loadPeerJS(){if(window.Peer)return Promise.resolve();if(LIVE.lib)return LIVE.lib;
   return LIVE.lib=new Promise((res,rej)=>{const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>{LIVE.lib=null;rej(new Error('Gagal memuat modul siaran. Periksa koneksi internet.'))};document.head.appendChild(sc)})}
+async function iceConfig(){
+  if(LIVE.ice&&Date.now()-LIVE.iceAt<36e5)return LIVE.ice;
+  try{const r=await apiCall('GET','/api/webrtc-ice',undefined,true);LIVE.ice={iceServers:r.iceServers};LIVE.relay=!!r.relay}catch(e){LIVE.ice=ICE;LIVE.relay=false}
+  LIVE.iceAt=Date.now();return LIVE.ice}
 function liveEl(key){if(!LIVE.els[key]){const v=document.createElement('video');v.autoplay=true;v.playsInline=true;v.setAttribute('playsinline','');v.className='livevid';v.muted=key.startsWith('self:')||key.startsWith('view:');v.controls=key.startsWith('view:');LIVE.els[key]=v}return LIVE.els[key]}
 function videoSlot(m){if(isYt(m))return `<div class="vslot" data-vslot="yt:${m.id}" data-yt="${esc(m.stream.broadcastId)}"></div>`;return isPhone(m)?`<div class="vslot" data-vslot="view:${m.id}" data-peer="${esc(m.stream.peerId||'')}"></div><div class="vstat" data-vstat="view:${m.id}"></div>`:courtSvg()}
 function silentStream(){const c=document.createElement('canvas');c.width=c.height=2;c.getContext('2d').fillRect(0,0,2,2);return c.captureStream(1)}
@@ -5453,7 +5457,7 @@ async function phoneStart(id){
     await loadPeerJS();
     stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720},frameRate:{ideal:24,max:30}},audio:{echoCancellation:true,noiseSuppression:true}});
     const peerId='aiarena-'+id+'-'+Math.random().toString(36).slice(2,8);
-    peer=new Peer(peerId,{config:ICE});await peerOpen(peer);
+    peer=new Peer(peerId,{config:await iceConfig()});await peerOpen(peer);
     peer.on('call',call=>{LIVE.calls=LIVE.calls.filter(c=>c.open);if(LIVE.calls.length>=PHONE_MAX_VIEWERS){call.close();return}
       call.answer(LIVE.local);LIVE.calls.push(call);
       setTimeout(()=>{try{call.peerConnection.getSenders().forEach(sn=>{if(sn.track&&sn.track.kind==='video'){const pr=sn.getParameters();pr.encodings=pr.encodings&&pr.encodings.length?pr.encodings:[{}];pr.encodings[0].maxBitrate=700000;sn.setParameters(pr).catch(()=>{})}})}catch(e){}},1500);
@@ -5491,9 +5495,9 @@ async function phoneView(key,peerId){
   if(!peerId)return;if(st.peerId===peerId&&(st.state==='connecting'||st.state==='live'))return;
   if(st.peerId&&st.peerId!==peerId){try{st.call&&st.call.close()}catch(e){}}
   st.peerId=peerId;st.state='connecting';st.msg='Menyambung ke siaran…';setStat(key);
-  try{await loadPeerJS();if(!st.peer||st.peer.destroyed){st.peer=new Peer({config:ICE});await peerOpen(st.peer)}
+  try{await loadPeerJS();if(!st.peer||st.peer.destroyed){st.peer=new Peer({config:await iceConfig()});await peerOpen(st.peer)}
     const call=st.peer.call(peerId,silentStream());st.call=call;
-    const to=setTimeout(()=>{if(st.state==='connecting'){st.state='idle';st.msg='Belum tersambung. Mencoba lagi…';try{call.close()}catch(e){}setStat(key)}},15000);
+    const to=setTimeout(()=>{if(st.state==='connecting'){st.state='idle';st.fails=(st.fails||0)+1;st.msg=st.fails>=2?(LIVE.relay?'Belum bisa tersambung. Pastikan penyiar masih menyiarkan, lalu tunggu atau muat ulang.':'Sambungan langsung gagal, biasanya karena beda jaringan dengan penyiar. Coba satu Wi-Fi yang sama dengan penyiar.'):'Belum tersambung. Mencoba lagi…';try{call.close()}catch(e){}setStat(key)}},15000);
     call.on('stream',rs=>{clearTimeout(to);const v=liveEl(key);v.srcObject=rs;st.state='live';st.msg='';v.play().catch(()=>{});setStat(key)});
     call.on('close',()=>{clearTimeout(to);if(st.state==='live'){st.state='idle';st.msg='Siaran terputus. Menyambung ulang…'}setStat(key)});
     call.on('error',()=>{clearTimeout(to);st.state='idle';st.msg='Gagal tersambung. Mencoba lagi…';setStat(key)});

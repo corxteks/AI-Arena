@@ -69,6 +69,14 @@ export function createApp() {
     res.set('Cache-Control', 'no-store').json({ matches: out, at: Date.now() });
   }));
 
+  // Daftar server ICE untuk WebRTC: STUN publik, plus TURN (relay) bila TURN_URLS/TURN_USERNAME/TURN_CREDENTIAL diisi.
+  app.get('/api/webrtc-ice', (_req, res) => {
+    const ice = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
+    const urls = String(process.env.TURN_URLS || '').split(',').map(x => x.trim()).filter(Boolean);
+    if (urls.length && process.env.TURN_USERNAME && process.env.TURN_CREDENTIAL) ice.push({ urls, username: process.env.TURN_USERNAME, credential: process.env.TURN_CREDENTIAL });
+    res.set('Cache-Control', 'no-store').json({ iceServers: ice, relay: ice.length > 1 });
+  });
+
   // Beranda publik (tanpa login): skor langsung, peringkat 10 besar, laga berikutnya, dan daftar PB. Nama dipendekkan (nama depan + inisial).
   app.get('/api/public/home', wrap(async (_req, res) => {
     const doc = (await query('SELECT doc FROM app_state WHERE id=1')).rows[0]?.doc || {};

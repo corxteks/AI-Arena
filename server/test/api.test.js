@@ -682,3 +682,18 @@ test('beranda publik: laga disiarkan membawa data video (peer atau YouTube) agar
   assert.equal(by('none').video, false);
   assert.equal(by('none').peer, null);
 });
+
+
+test('WebRTC: server ICE selalu memuat STUN, dan TURN hanya bila dikonfigurasi', async () => {
+  const saved = { u: process.env.TURN_URLS, n: process.env.TURN_USERNAME, c: process.env.TURN_CREDENTIAL };
+  delete process.env.TURN_URLS; delete process.env.TURN_USERNAME; delete process.env.TURN_CREDENTIAL;
+  let r = await api('GET', '/api/webrtc-ice');
+  assert.equal(r.status, 200);
+  assert.equal(r.body.relay, false);
+  assert.equal(r.body.iceServers.length, 1);
+  process.env.TURN_URLS = 'turn:relay.example.com:80,turns:relay.example.com:443?transport=tcp'; process.env.TURN_USERNAME = 'u'; process.env.TURN_CREDENTIAL = 'p';
+  r = await api('GET', '/api/webrtc-ice');
+  assert.equal(r.body.relay, true);
+  assert.deepEqual(r.body.iceServers[1].urls, ['turn:relay.example.com:80', 'turns:relay.example.com:443?transport=tcp']);
+  for (const [k, v] of [['TURN_URLS', saved.u], ['TURN_USERNAME', saved.n], ['TURN_CREDENTIAL', saved.c]]) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
+});
