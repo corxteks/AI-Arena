@@ -4396,6 +4396,7 @@ function vModal(){
   }else if(M.type==='ytLive'){
     const m=match(M.id);if(!m){ui.modal=null;return ''}
     h=M.stage==='creating'?`<h2>Menyiapkan siaran YouTube</h2><p class="small muted">Membuat siaran dan kunci pengiriman…</p>`
+    :M.stage==='sending'?`<h2>Mengirim video ke YouTube</h2><p class="small muted">${esc(names(m.teamA))} vs ${esc(names(m.teamB))}, ${esc(m.court)}</p><p>${esc(M.msg||'Menyambungkan kamera…')}</p><p class="small muted">Biarkan layar menyala. Siaran tayang otomatis begitu YouTube menerima gambar.</p><div class="two rbtn"><button class="btn ghost danger" data-act="ytCancel" data-id="${m.id}">Batalkan</button><button class="btn ghost" data-act="closeModal">Tutup</button></div>`
     :M.stage==='live'?`<h2>Siaran tayang di YouTube</h2><p class="small muted">${esc(names(m.teamA))} vs ${esc(names(m.teamB))}, ${esc(m.court)}</p><p>Penonton bisa menonton di dalam aplikasi, halaman Siaran, dan tautan skor langsung.</p><div class="two rbtn"><button class="btn cork" data-act="watch" data-id="${m.id}">Tonton sekarang</button><button class="btn ghost" data-act="closeModal">Tutup</button></div>`
     :`<h2>Siaran YouTube siap</h2><p class="small muted">${esc(names(m.teamA))} vs ${esc(names(m.teamB))}, ${esc(m.court)}</p>
     <ol class="small" style="padding-left:18px;margin:6px 0"><li>Di kamera RTMP atau aplikasi OBS, isi <b>Server</b> dan <b>Kunci siaran</b> di bawah, lalu mulai kirim video.</li><li>Tunggu 10 sampai 20 detik sampai YouTube menerima gambar.</li><li>Tekan <b>Tayangkan sekarang</b>.</li></ol>
@@ -5530,18 +5531,39 @@ async function ytStart(id){
   try{let info;
     if(m.ytPending){info={...m.ytPending,...await apiCall('GET','/api/youtube/streams/'+m.ytPending.id+'/ingest')}}
     else{info=await apiCall('POST','/api/youtube/streams',{matchId:id,court:m.court,title:(names(m.teamA)+' vs '+names(m.teamB)).slice(0,100),privacy:'unlisted'});m.ytPending={id:info.id,broadcastId:info.broadcastId};save()}
+    if(rtmpPlugin()){return ytAuto(id,info)}
     ui.modal={type:'ytLive',id,stage:'ready',addr:info.ingestAddress,key:info.streamName};render();
   }catch(e){ui.modal=null;render();toast(ytErr(e))}}
-async function ytGo(id){
-  const m=match(id);if(!m||!m.ytPending)return;
+const rtmpPlugin=()=>{try{return IS_APK&&window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.RtmpLive||null}catch(e){return null}};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+/* APK Android: kamera HP mengirim langsung ke YouTube, lalu siaran ditayangkan otomatis */
+async function ytAuto(id,info){const RTMP=rtmpPlugin();
+  const setMsg=t=>{if(ui.modal&&ui.modal.type==='ytLive'&&ui.modal.id===id&&ui.modal.stage==='sending'){ui.modal.msg=t;render(true)}};
+  ui.modal={type:'ytLive',id,stage:'sending',msg:'Meminta izin kamera dan mikrofon…'};render();
+  let failed='';
+  try{RTMP.addListener('state',e=>{if(e&&e.state==='failed')failed=e.reason||'gagal'})}catch(e){}
+  try{await RTMP.start({url:info.ingestAddress.replace(/\/$/,'')+'/'+info.streamName})}
+  catch(e){ui.modal=null;render();return toast((e&&e.message)||'Kamera tidak bisa dimulai. Izinkan kamera dan mikrofon untuk aplikasi.')}
+  setMsg('Mengirim gambar ke YouTube…');
+  for(let i=0;i<20;i++){
+    await sleep(4000);
+    const m=match(id);if(!m||!m.ytPending)return;
+    if(failed){try{await RTMP.stop()}catch(e){}ui.modal={type:'ytLive',id,stage:'ready',addr:info.ingestAddress,key:info.streamName};render();return toast('Pengiriman ke YouTube gagal ('+failed+'). Periksa sinyal internet lalu coba lagi.')}
+    setMsg('Menunggu YouTube menerima gambar… ('+(i+1)*4+' dtk)');
+    if(await ytGo(id,true))return}
+  try{await RTMP.stop()}catch(e){}
+  ui.modal={type:'ytLive',id,stage:'ready',addr:info.ingestAddress,key:info.streamName};render();
+  toast('YouTube belum menerima gambar. Cek sinyal internet lalu coba lagi.')}
+async function ytGo(id,quiet){
+  const m=match(id);if(!m||!m.ytPending)return false;
   try{await apiCall('POST','/api/youtube/streams/'+m.ytPending.id+'/transition',{status:'live'})}
-  catch(e){return toast(/menolak perubahan status/i.test(e.message)?'YouTube belum menerima video dari kamera. Pastikan kamera/OBS sudah mengirim, tunggu 10 sampai 20 detik, lalu coba lagi.':ytErr(e))}
+  catch(e){if(quiet&&/menolak perubahan status/i.test(e.message))return false;return toast(/menolak perubahan status/i.test(e.message)?'YouTube belum menerima video dari kamera. Pastikan kamera/OBS sudah mengirim, tunggu 10 sampai 20 detik, lalu coba lagi.':ytErr(e))}
   m.stream={id:'yt_'+m.ytPending.id,mode:'youtube',ytId:m.ytPending.id,broadcastId:m.ytPending.broadcastId,privacy:'unlisted',started:Date.now(),rx:{},marks:[],seen:{}};delete m.ytPending;
   if(m.status==='scheduled')m.status='playing';if(!m.startedAt)m.startedAt=Date.now();if(!m.log||!m.log.length)logSnap(m);
   const c=club(m.clubId);if(c)notify(c.members.filter(x=>x!==ME),`LIVE sekarang: ${names(m.teamA)} vs ${names(m.teamB)} di ${m.court}.`,{tab:'home'});
-  ui.modal={type:'ytLive',id,stage:'live'};commit('Siaran tayang di YouTube.')}
+  ui.modal={type:'ytLive',id,stage:'live'};commit('Siaran tayang di YouTube.');return true}
 async function ytStop(id,toastMsg){
-  const m=match(id);if(!m)return;const yid=(m.stream&&m.stream.ytId)||(m.ytPending&&m.ytPending.id);
+  const m=match(id);if(!m)return;{const R=rtmpPlugin();if(R){try{await R.stop()}catch(e){}}}const yid=(m.stream&&m.stream.ytId)||(m.ytPending&&m.ytPending.id);
   if(yid){try{await apiCall('POST','/api/youtube/streams/'+yid+'/transition',{status:'complete'})}catch(e){if(!/tidak bisa diubah|tidak ditemukan/i.test(e.message))return toast(ytErr(e))}}
   if(m.stream&&m.stream.mode==='youtube'&&!m.stream.ended){m.stream.ended=true;m.stream.endedAt=Date.now()}delete m.ytPending;ui.modal=null;commit(toastMsg||'Siaran diakhiri.')}
 async function ytSetupLoad(){try{const d=await apiCall('GET','/api/youtube/status');if(ui.modal&&ui.modal.type==='ytSetup'){ui.modal.data=d;ui.modal.err='';render(true)}}catch(e){if(ui.modal&&ui.modal.type==='ytSetup'){ui.modal.err=e.message;render(true)}}}
