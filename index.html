@@ -5558,7 +5558,8 @@ async function ytAuto(id,info){const RTMP=rtmpPlugin();
   toast('YouTube belum menerima gambar. Cek sinyal internet lalu coba lagi.')}
 async function ytGo(id,quiet){
   const m=match(id);if(!m||!m.ytPending)return false;
-  try{await apiCall('POST','/api/youtube/streams/'+m.ytPending.id+'/transition',{status:'live'})}
+  try{try{await apiCall('POST','/api/youtube/streams/'+m.ytPending.id+'/transition',{status:'testing'})}catch(e){}
+    await sleep(2500);await apiCall('POST','/api/youtube/streams/'+m.ytPending.id+'/transition',{status:'live'})}
   catch(e){if(quiet&&/menolak perubahan status/i.test(e.message))return false;return toast(/menolak perubahan status/i.test(e.message)?'YouTube belum menerima video dari kamera. Pastikan kamera/OBS sudah mengirim, tunggu 10 sampai 20 detik, lalu coba lagi.':ytErr(e))}
   m.stream={id:'yt_'+m.ytPending.id,mode:'youtube',ytId:m.ytPending.id,broadcastId:m.ytPending.broadcastId,privacy:'unlisted',started:Date.now(),rx:{},marks:[],seen:{}};delete m.ytPending;
   if(m.status==='scheduled')m.status='playing';if(!m.startedAt)m.startedAt=Date.now();if(!m.log||!m.log.length)logSnap(m);
