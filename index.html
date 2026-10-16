@@ -5537,7 +5537,8 @@ async function ytStart(id){
     ui.modal={type:'ytLive',id,stage:'ready',addr:info.ingestAddress,key:info.streamName};render();
   }catch(e){ui.modal=null;render();toast(ytErr(e))}}
 const rtmpPlugin=()=>{try{const C=window.Capacitor;if(!C)return null;if(C.Plugins&&C.Plugins.RtmpLive)return C.Plugins.RtmpLive;if(C.isPluginAvailable&&C.isPluginAvailable('RtmpLive')&&C.registerPlugin)return C.registerPlugin('RtmpLive');return null}catch(e){return null}};
-const apkInfo=()=>{const C=window.Capacitor;return !C?'Dibuka di browser, bukan APK':rtmpPlugin()?'APK 1.2: kamera HP ke YouTube aktif':'APK lama (tanpa kamera YouTube). Pasang ulang AI-ARENA.apk versi 1.2'};
+const WEB_BUILD='16okt-c';
+const apkInfo=()=>{const C=window.Capacitor;return 'Halaman '+WEB_BUILD+'. '+(!C?'Dibuka di browser, bukan APK':rtmpPlugin()?'APK 1.2: kamera HP ke YouTube aktif':'APK lama (tanpa kamera YouTube). Pasang ulang AI-ARENA.apk versi 1.2')};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 /* APK Android: kamera HP mengirim langsung ke YouTube, lalu siaran ditayangkan otomatis */
 async function ytAuto(id,info){const RTMP=rtmpPlugin();
