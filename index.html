@@ -5153,7 +5153,9 @@ const A={
   undo(){const m=match(ui.matchId);if(!m.undo)return;const p=JSON.parse(m.undo);m.cur=p.cur;m.games=p.games;m.undo=null;logSnap(m);commit('Poin terakhir dibatalkan.')},
   endDraw(){const m=match(ui.matchId);if(!m||winner(m)||m.draw||m.tourneyId||m.leagueId)return;if(m.umpireId!==ME&&!isAdmin())return;
     if(!confirm('Akhiri pertandingan dengan hasil seri? Skor yang sudah ada tetap dicatat.'))return;
-    const c=m.cur;if(c&&c.a+c.b>0)m.games.push([c.a,c.b]);if(!m.games.length){ui.view=null;ui.modal={type:'voidM',id:m.id,mode:'cancel'};render();return toast('Belum ada poin, jadi tidak bisa seri. Batalkan laga ini kalau memang tidak jadi dimainkan.')}
+    const c=m.cur,gl=(c&&c.a+c.b>0)?[...m.games,[c.a,c.b]]:m.games,ga=gl.filter(g=>g[0]>g[1]).length,gb=gl.filter(g=>g[1]>g[0]).length;
+    if(gl.length&&ga!==gb)return toast('Seri hanya bisa kalau jumlah gim yang dimenangkan sama (misalnya 1–1). Sekarang '+ga+'–'+gb+'.');
+    if(c&&c.a+c.b>0)m.games.push([c.a,c.b]);if(!m.games.length){ui.view=null;ui.modal={type:'voidM',id:m.id,mode:'cancel'};render();return toast('Belum ada poin, jadi tidak bisa seri. Batalkan laga ini kalau memang tidak jadi dimainkan.')}
     m.cur=null;m.draw=true;commit('Pertandingan diakhiri seri. Tekan Kirim skor untuk verifikasi.')},
   submitScore(){const m=match(ui.matchId);if(!winner(m)&&!m.draw)return;m.status='pending';m.undo=null;m.t=Date.now();m.submittedAt=Date.now();
     if(m.stream&&!m.stream.ended){m.stream.ended=true;m.stream.endedAt=Date.now();quota().used+=END_COST}
